@@ -4,10 +4,10 @@
   "description": "YouTube Audio Streamer with Background Play",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "postinstall": "pip install yt-dlp --break-system-packages || python3 -m pip install yt-dlp --break-system-packages"
+    "start": "node server.js"
   },
   "dependencies": {
+    "@distube/ytdl-core": "^4.14.4",
     "cors": "^2.8.5",
     "express": "^4.19.2"
   }
