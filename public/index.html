@@ -59,12 +59,12 @@
         </div>
         <div>
           <h1 class="text-lg font-black tracking-wider uppercase text-white">plam<span class="text-red-500">tube</span></h1>
-          <p class="text-[10px] text-zinc-500 font-medium">Search &amp; Link &bull; Background Supported</p>
+          <p class="text-[10px] text-zinc-500 font-medium">Search &amp; Stream Engine</p>
         </div>
       </div>
       <div id="status-badge" class="text-[11px] px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center gap-1.5">
         <span id="status-dot" class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> 
-        <span id="status-badge-text">กำลังโหลดระบบ...</span>
+        <span id="status-badge-text">กำลังเตรียมระบบ...</span>
       </div>
     </header>
 
@@ -74,7 +74,7 @@
         <input 
           type="text" 
           id="url-input" 
-          placeholder="ค้นหาชื่อเพลง ศิลปิน หรือวางลิงก์ YouTube" 
+          placeholder="พิมพ์ชื่อเพลง หรือ วางลิงก์ YouTube" 
           class="w-full bg-zinc-900 border border-zinc-800 text-zinc-100 placeholder-zinc-500 rounded-xl pl-10 pr-24 py-3 text-sm focus:outline-none focus:border-red-600 transition"
         />
         <i class="fa-solid fa-magnifying-glass absolute left-3.5 text-zinc-500 text-xs"></i>
@@ -82,15 +82,13 @@
           id="btn-play" 
           class="absolute right-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs px-4 py-2 rounded-lg transition active:scale-95 shadow-md flex items-center gap-1.5"
         >
-          <span id="btn-text">ค้นหา / เล่น</span>
+          <span id="btn-text">เล่นเพลง</span>
         </button>
       </div>
-      <p id="status-hint" class="text-[11px] text-zinc-500 px-1 truncate">พิมพ์ชื่อเพลงเพื่อค้นหา หรือวางลิงก์เพื่อเล่นทันที</p>
+      <p id="status-hint" class="text-[11px] text-zinc-500 px-1 truncate">พิมพ์ชื่อเพลงเพื่อค้นหา หรือวางลิงก์แล้วกดเล่น</p>
 
       <!-- Dropdown ผลการค้นหา -->
-      <div id="search-results" class="hidden absolute top-14 left-0 right-0 bg-zinc-950/95 backdrop-blur-md border border-zinc-800 rounded-xl shadow-2xl p-2 z-50 max-h-72 overflow-y-auto space-y-1.5">
-        <!-- รายการค้นหาจะแสดงที่นี่ -->
-      </div>
+      <div id="search-results" class="hidden absolute top-14 left-0 right-0 bg-zinc-950/95 backdrop-blur-md border border-zinc-800 rounded-xl shadow-2xl p-2 z-50 max-h-72 overflow-y-auto space-y-1.5"></div>
     </div>
 
     <!-- Vinyl Player Display -->
@@ -203,7 +201,8 @@
     const historyBadge = document.getElementById('history-badge');
     const btnClearHistory = document.getElementById('btn-clear-history');
 
-    window.onYouTubeIframeAPIReady = function() {
+    function initYouTube() {
+      if (player) return;
       player = new YT.Player('yt-player', {
         height: '200',
         width: '200',
@@ -223,12 +222,22 @@
           },
           'onStateChange': onStateChange,
           'onError': () => {
-            statusHint.innerText = "ไม่สามารถเล่นวิดีโอนี้ได้ (อาจติดลิขสิทธิ์)";
+            statusHint.innerText = "ไม่สามารถเล่นเพลงนี้ได้";
             statusHint.className = "text-[11px] text-red-500 px-1 truncate";
           }
         }
       });
-    };
+    }
+
+    window.onYouTubeIframeAPIReady = initYouTube;
+
+    // ระบบสำรองกรณี API พร้อมแล้วแต่ callback ไม่ถูกเรียก
+    const checkYT = setInterval(() => {
+      if (window.YT && window.YT.Player) {
+        initYouTube();
+        clearInterval(checkYT);
+      }
+    }, 500);
 
     function extractVideoId(url) {
       if (!url) return null;
@@ -250,17 +259,12 @@
       if (e.data === YT.PlayerState.PLAYING) {
         vinyl.classList.remove('spin-paused');
         toggleIcon.className = "fa-solid fa-pause";
-        statusHint.innerText = "กำลังเล่นเสียง • ปิดหน้าจอได้ทันที";
+        statusHint.innerText = "กำลังเล่นเสียง";
         statusHint.className = "text-[11px] text-emerald-500 px-1 truncate";
         silentAudio.play().catch(() => {});
         startTimer();
         setupMediaSession();
-      } else if (e.data === YT.PlayerState.PAUSED) {
-        vinyl.classList.add('spin-paused');
-        toggleIcon.className = "fa-solid fa-play ml-0.5";
-        silentAudio.pause();
-        clearInterval(timer);
-      } else if (e.data === YT.PlayerState.ENDED) {
+      } else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) {
         vinyl.classList.add('spin-paused');
         toggleIcon.className = "fa-solid fa-play ml-0.5";
         silentAudio.pause();
@@ -268,54 +272,55 @@
       }
     }
 
-    // ฟังก์ชันค้นหาเพลงผ่าน YouTube Suggestion API
-    async function searchTracks(query) {
+    // ฟังก์ชันค้นหาผ่าน JSONP แก้ไขปัญหา CORS ค้าง 100%
+    window.handleSuggestions = function(data) {
+      const suggestions = (data && data[1]) ? data[1] : [];
+      if (suggestions.length === 0) {
+        playSongBySearch(urlInput.value.trim());
+        return;
+      }
+      renderSearchResults(suggestions.slice(0, 6));
+    };
+
+    function searchTracks(query) {
       statusHint.innerText = `กำลังค้นหา "${query}"...`;
       statusHint.className = "text-[11px] text-amber-500 px-1 truncate";
-      btnText.innerText = "ค้นหา...";
 
-      try {
-        const res = await fetch(`https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${encodeURIComponent(query)}`);
-        const data = await res.json();
-        const suggestions = data[1] || [];
+      // ลบ script เก่าออกก่อน
+      const oldScript = document.getElementById('jsonp-search');
+      if (oldScript) oldScript.remove();
 
-        if (suggestions.length === 0) {
-          statusHint.innerText = "ไม่พบผลการค้นหา ลองคำอื่นดูครับ";
-          statusHint.className = "text-[11px] text-zinc-400 px-1 truncate";
-          searchResults.classList.add('hidden');
-          return;
-        }
-
-        renderSearchResults(suggestions.slice(0, 6));
-      } catch (err) {
-        // หากค้นหาไม่ได้ให้ส่งคำค้นหาไปเปิดบน IFrame โดยตรง
+      // สร้าง script tag ใหม่เพื่อดึง JSONP โดยไม่ติด CORS
+      const script = document.createElement('script');
+      script.id = 'jsonp-search';
+      script.src = `https://suggestqueries.google.com/complete/search?client=youtube&ds=yt&q=${encodeURIComponent(query)}&jsonp=handleSuggestions`;
+      script.onerror = () => {
         playSongBySearch(query);
-      } finally {
-        btnText.innerText = "ค้นหา / เล่น";
-      }
+      };
+      document.body.appendChild(script);
     }
 
     function renderSearchResults(items) {
       searchResults.innerHTML = '';
-      items.forEach(text => {
-        const item = document.createElement('div');
-        item.className = "flex items-center gap-3 p-2.5 rounded-lg hover:bg-zinc-900 cursor-pointer transition active:scale-[0.98] text-zinc-200 text-xs";
-        item.innerHTML = `
+      items.forEach(itemData => {
+        const text = Array.isArray(itemData) ? itemData[0] : itemData;
+        const div = document.createElement('div');
+        div.className = "flex items-center gap-3 p-2.5 rounded-lg hover:bg-zinc-900 cursor-pointer transition active:scale-[0.98] text-zinc-200 text-xs";
+        div.innerHTML = `
           <i class="fa-brands fa-youtube text-red-500"></i>
           <span class="flex-1 truncate">${text}</span>
           <i class="fa-solid fa-arrow-right text-[10px] text-zinc-600"></i>
         `;
-        item.addEventListener('click', () => {
+        div.addEventListener('click', () => {
           searchResults.classList.add('hidden');
           urlInput.value = text;
           playSongBySearch(text);
         });
-        searchResults.appendChild(item);
+        searchResults.appendChild(div);
       });
       searchResults.classList.remove('hidden');
     }
 
-    // ปิดกล่องผลการค้นหาเมื่อแตะข้างนอก
     document.addEventListener('click', (e) => {
       if (!searchResults.contains(e.target) && e.target !== urlInput && e.target !== btnPlay) {
         searchResults.classList.add('hidden');
@@ -323,23 +328,23 @@
     });
 
     function playSongBySearch(query) {
-      if (!isReady || !player) return;
-      statusHint.innerText = `กำลังโหลดเพลง "${query}"...`;
+      if (!isReady || !player) {
+        statusHint.innerText = "กำลังเชื่อมต่อระบบ กรุณารอ 2 วินาทีแล้วลองใหม่";
+        return;
+      }
+      statusHint.innerText = `กำลังโหลด "${query}"...`;
       statusHint.className = "text-[11px] text-amber-500 px-1 truncate";
 
-      // ส่งคำค้นหาให้ YouTube Player โหลดคลิปแรกของผลลัพธ์ทันที
       player.loadPlaylist({
         listType: 'search',
         list: query
       });
 
       trackTitle.innerText = query;
-      trackAuthor.innerText = "YouTube Music";
-      trackCover.src = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&auto=format&fit=crop&q=80";
+      trackAuthor.innerText = "กำลังเล่นจากผลการค้นหา";
 
-      // รออัปเดตชื่อเพลงจริงจาก Player
       setTimeout(() => {
-        if (player.getVideoData) {
+        if (player && player.getVideoData) {
           const vData = player.getVideoData();
           if (vData && vData.title) {
             currentTrack = {
@@ -355,12 +360,12 @@
             saveHistory(currentTrack);
           }
         }
-      }, 2000);
+      }, 2500);
     }
 
     async function playSong(videoId) {
       if (!isReady || !player) {
-        alert("กำลังโหลดระบบเครื่องเล่น กรุณารอสักครู่");
+        statusHint.innerText = "ระบบกำลังเริ่มต้น กรุณากดใหม่อีกครั้ง";
         return;
       }
       currentVideoId = videoId;
@@ -392,11 +397,9 @@
       trackTitle.innerText = currentTrack.title;
       trackAuthor.innerText = currentTrack.author;
       trackCover.src = currentTrack.cover;
-
       saveHistory(currentTrack);
     }
 
-    // จัดการปุ่มกด (ตรวจจับว่าวางลิงก์หรือพิมพ์ค้นหา)
     btnPlay.addEventListener('click', () => {
       const val = urlInput.value.trim();
       if (!val) return;
@@ -416,7 +419,7 @@
     });
 
     btnToggle.addEventListener('click', () => {
-      if (!isReady) return;
+      if (!isReady || !player) return;
       const state = player.getPlayerState();
       if (state === YT.PlayerState.PLAYING) {
         player.pauseVideo();
@@ -447,11 +450,11 @@
     });
 
     document.getElementById('btn-backward').addEventListener('click', () => {
-      if (isReady) player.seekTo(Math.max(0, player.getCurrentTime() - 10), true);
+      if (isReady && player) player.seekTo(Math.max(0, player.getCurrentTime() - 10), true);
     });
 
     document.getElementById('btn-forward').addEventListener('click', () => {
-      if (isReady) player.seekTo(player.getCurrentTime() + 10, true);
+      if (isReady && player) player.seekTo(player.getCurrentTime() + 10, true);
     });
 
     function setupMediaSession() {
