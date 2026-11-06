@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const ytdl = require('@distube/ytdl-core');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,50 +8,31 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/api/stream', async (req, res) => {
-  const videoId = req.query.id;
-  if (!videoId || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-    return res.status(400).send('Invalid Video ID');
-  }
-
-  const ytUrl = `https://www.youtube.com/watch?v=${videoId}`;
+// API ค้นหาเพลงเพื่อดึง Video ID จริง
+app.get('/api/search', async (req, res) => {
+  const query = req.query.q;
+  if (!query) return res.status(400).json({ error: 'Missing query' });
 
   try {
-    // 1. ดึงข้อมูลวิดีโอเพื่อเลือกฟอร์แมตเสียงโดยตรง
-    const info = await ytdl.getInfo(ytUrl);
-    
-    // เลือกฟอร์แมตเสียงแบบ MP4/M4A เพื่อให้เบราว์เซอร์เล่นได้ทันทีโดยไม่ต้องรอแปลง
-    const format = ytdl.chooseFormat(info.formats, {
-      quality: 'highestaudio',
-      filter: (f) => f.container === 'mp4' && !f.hasVideo && f.hasAudio
-    }) || ytdl.chooseFormat(info.formats, { quality: 'highestaudio', filter: 'audioonly' });
+    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    const response = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+    const html = await response.text();
 
-    if (!format) {
-      return res.status(404).send('Audio format not found');
+    // ดึง Video ID แรกจากผลการค้นหา
+    const match = html.match(/"videoId":"([a-zA-Z0-9_-]{11})"/);
+    if (match && match[1]) {
+      return res.json({ videoId: match[1] });
     }
-
-    // 2. ตั้งค่า Header สำหรับ Audio Streaming
-    res.setHeader('Content-Type', format.mimeType || 'audio/mp4');
-    res.setHeader('Accept-Ranges', 'bytes');
-
-    // 3. ปล่อย Stream ข้อมูลตรงไปยังเครื่องผู้ใช้
-    const stream = ytdl.downloadFromInfo(info, {
-      format: format,
-      highWaterMark: 1 << 20 // ขนาดบัฟเฟอร์เริ่มต้น 1MB ให้โหลดไว
-    });
-
-    stream.on('error', (err) => {
-      console.error('ytdl stream error:', err.message);
-      if (!res.headersSent) res.status(500).end();
-    });
-
-    stream.pipe(res);
+    res.status(404).json({ error: 'Not found' });
   } catch (err) {
-    console.error('Fetch error:', err.message);
-    if (!res.headersSent) res.status(500).end();
+    res.status(500).json({ error: err.message });
   }
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running on port: ${PORT}`);
+  console.log(`Server running on port: ${PORT}`);
 });
