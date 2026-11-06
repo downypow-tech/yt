@@ -231,7 +231,6 @@
 
     window.onYouTubeIframeAPIReady = initYouTube;
 
-    // ระบบสำรองกรณี API พร้อมแล้วแต่ callback ไม่ถูกเรียก
     const checkYT = setInterval(() => {
       if (window.YT && window.YT.Player) {
         initYouTube();
@@ -272,7 +271,7 @@
       }
     }
 
-    // ฟังก์ชันค้นหาผ่าน JSONP แก้ไขปัญหา CORS ค้าง 100%
+    // ฟังก์ชันรับผลลัพธ์คำค้นหาจาก Google Suggest (JSONP)
     window.handleSuggestions = function(data) {
       const suggestions = (data && data[1]) ? data[1] : [];
       if (suggestions.length === 0) {
@@ -286,11 +285,9 @@
       statusHint.innerText = `กำลังค้นหา "${query}"...`;
       statusHint.className = "text-[11px] text-amber-500 px-1 truncate";
 
-      // ลบ script เก่าออกก่อน
       const oldScript = document.getElementById('jsonp-search');
       if (oldScript) oldScript.remove();
 
-      // สร้าง script tag ใหม่เพื่อดึง JSONP โดยไม่ติด CORS
       const script = document.createElement('script');
       script.id = 'jsonp-search';
       script.src = `https://suggestqueries.google.com/complete/search?client=youtube&ds=yt&q=${encodeURIComponent(query)}&jsonp=handleSuggestions`;
@@ -327,40 +324,29 @@
       }
     });
 
-    function playSongBySearch(query) {
+    // ค้นหาและดึง Video ID ตรงจากเซิร์ฟเวอร์
+    async function playSongBySearch(query) {
       if (!isReady || !player) {
         statusHint.innerText = "กำลังเชื่อมต่อระบบ กรุณารอ 2 วินาทีแล้วลองใหม่";
         return;
       }
-      statusHint.innerText = `กำลังโหลด "${query}"...`;
+      statusHint.innerText = `กำลังค้นหาและดึงเพลง "${query}"...`;
       statusHint.className = "text-[11px] text-amber-500 px-1 truncate";
 
-      player.loadPlaylist({
-        listType: 'search',
-        list: query
-      });
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
 
-      trackTitle.innerText = query;
-      trackAuthor.innerText = "กำลังเล่นจากผลการค้นหา";
-
-      setTimeout(() => {
-        if (player && player.getVideoData) {
-          const vData = player.getVideoData();
-          if (vData && vData.title) {
-            currentTrack = {
-              id: vData.video_id,
-              title: vData.title,
-              author: vData.author || "YouTube Artist",
-              cover: `https://img.youtube.com/vi/${vData.video_id}/hqdefault.jpg`,
-              timestamp: Date.now()
-            };
-            trackTitle.innerText = currentTrack.title;
-            trackAuthor.innerText = currentTrack.author;
-            trackCover.src = currentTrack.cover;
-            saveHistory(currentTrack);
-          }
+        if (data && data.videoId) {
+          playSong(data.videoId);
+        } else {
+          statusHint.innerText = "ไม่พบเพลงนี้ ลองใช้คำค้นหาอื่นดูครับ";
+          statusHint.className = "text-[11px] text-red-400 px-1 truncate";
         }
-      }, 2500);
+      } catch (err) {
+        statusHint.innerText = "การค้นหาขัดข้อง กรุณาลองใหม่อีกครั้ง";
+        statusHint.className = "text-[11px] text-red-500 px-1 truncate";
+      }
     }
 
     async function playSong(videoId) {
