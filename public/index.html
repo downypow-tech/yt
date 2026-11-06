@@ -29,7 +29,6 @@
       background: #27272a;
       border-radius: 4px;
     }
-    /* ซ่อน IFrame แต่คงขนาดเล็กไว้ให้เบราว์เซอร์ไม่ตัดการทำงาน */
     #player-wrapper {
       position: fixed;
       bottom: 0;
@@ -44,15 +43,13 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between items-center p-4">
 
-  <!-- เสียงเงียบแทรกเพื่อบังคับให้เบราว์เซอร์คงระบบเสียงพื้นหลังไว้ตอนปิดจอ -->
   <audio id="silent-audio" loop playsinline preload="auto"></audio>
 
-  <!-- YouTube Official Player Element -->
   <div id="player-wrapper">
     <div id="yt-player"></div>
   </div>
 
-  <div class="w-full max-w-md flex flex-col gap-5 my-auto">
+  <div class="w-full max-w-md flex flex-col gap-4 my-auto">
 
     <!-- Header Brand -->
     <header class="flex items-center justify-between border-b border-zinc-900 pb-3">
@@ -62,7 +59,7 @@
         </div>
         <div>
           <h1 class="text-lg font-black tracking-wider uppercase text-white">plam<span class="text-red-500">tube</span></h1>
-          <p class="text-[10px] text-zinc-500 font-medium">Official Engine &bull; Background Supported</p>
+          <p class="text-[10px] text-zinc-500 font-medium">Search &amp; Link &bull; Background Supported</p>
         </div>
       </div>
       <div id="status-badge" class="text-[11px] px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center gap-1.5">
@@ -72,28 +69,33 @@
     </header>
 
     <!-- Search / URL Input Box -->
-    <div class="flex flex-col gap-1.5">
+    <div class="flex flex-col gap-1.5 relative">
       <div class="relative flex items-center">
         <input 
           type="text" 
           id="url-input" 
-          placeholder="วางลิงก์ YouTube (watch, shorts, youtu.be)" 
+          placeholder="ค้นหาชื่อเพลง ศิลปิน หรือวางลิงก์ YouTube" 
           class="w-full bg-zinc-900 border border-zinc-800 text-zinc-100 placeholder-zinc-500 rounded-xl pl-10 pr-24 py-3 text-sm focus:outline-none focus:border-red-600 transition"
         />
-        <i class="fa-solid fa-link absolute left-3.5 text-zinc-500 text-xs"></i>
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 text-zinc-500 text-xs"></i>
         <button 
           id="btn-play" 
           class="absolute right-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs px-4 py-2 rounded-lg transition active:scale-95 shadow-md flex items-center gap-1.5"
         >
-          <span id="btn-text">เล่นเพลง</span>
+          <span id="btn-text">ค้นหา / เล่น</span>
         </button>
       </div>
-      <p id="status-hint" class="text-[11px] text-zinc-500 px-1 truncate">รองรับทุกเพลงบน YouTube 100%</p>
+      <p id="status-hint" class="text-[11px] text-zinc-500 px-1 truncate">พิมพ์ชื่อเพลงเพื่อค้นหา หรือวางลิงก์เพื่อเล่นทันที</p>
+
+      <!-- Dropdown ผลการค้นหา -->
+      <div id="search-results" class="hidden absolute top-14 left-0 right-0 bg-zinc-950/95 backdrop-blur-md border border-zinc-800 rounded-xl shadow-2xl p-2 z-50 max-h-72 overflow-y-auto space-y-1.5">
+        <!-- รายการค้นหาจะแสดงที่นี่ -->
+      </div>
     </div>
 
     <!-- Vinyl Player Display -->
-    <div class="flex flex-col items-center justify-center py-2">
-      <div id="vinyl" class="w-52 h-52 rounded-full bg-zinc-950 border-4 border-zinc-900 shadow-2xl shadow-red-950/20 flex items-center justify-center relative spin spin-paused">
+    <div class="flex flex-col items-center justify-center py-1">
+      <div id="vinyl" class="w-48 h-48 rounded-full bg-zinc-950 border-4 border-zinc-900 shadow-2xl shadow-red-950/20 flex items-center justify-center relative spin spin-paused">
         <div class="absolute inset-0 rounded-full border border-zinc-800/40 m-2 pointer-events-none"></div>
         <div class="absolute inset-0 rounded-full border border-zinc-800/30 m-6 pointer-events-none"></div>
         <div class="absolute inset-0 rounded-full border border-zinc-800/20 m-10 pointer-events-none"></div>
@@ -102,10 +104,10 @@
           id="track-cover" 
           src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&auto=format&fit=crop&q=80" 
           alt="Cover" 
-          class="w-24 h-24 rounded-full object-cover border-2 border-zinc-900 shadow-inner z-10"
+          class="w-20 h-20 rounded-full object-cover border-2 border-zinc-900 shadow-inner z-10"
         />
-        <div class="w-6 h-6 bg-zinc-950 rounded-full border-2 border-zinc-800 z-20 absolute flex items-center justify-center">
-          <div class="w-2 h-2 rounded-full bg-red-600"></div>
+        <div class="w-5 h-5 bg-zinc-950 rounded-full border-2 border-zinc-800 z-20 absolute flex items-center justify-center">
+          <div class="w-1.5 h-1.5 rounded-full bg-red-600"></div>
         </div>
       </div>
     </div>
@@ -113,7 +115,7 @@
     <!-- Metadata Section -->
     <div class="text-center px-4">
       <h2 id="track-title" class="text-base font-bold text-zinc-100 truncate">ยังไม่มีเพลงที่เล่น</h2>
-      <p id="track-author" class="text-xs text-zinc-400 mt-0.5 truncate">วางลิงก์เพื่อเริ่มเล่น</p>
+      <p id="track-author" class="text-xs text-zinc-400 mt-0.5 truncate">พิมพ์ค้นหาหรือวางลิงก์เพื่อเริ่มเล่น</p>
     </div>
 
     <!-- Progress / Seekbar -->
@@ -160,7 +162,7 @@
         </button>
       </div>
 
-      <div id="history-container" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
+      <div id="history-container" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
     </div>
 
   </div>
@@ -169,7 +171,6 @@
     plamtube &bull; Red & Black Engine
   </footer>
 
-  <!-- โหลดสคริปต์ทางการของ YouTube -->
   <script src="https://www.youtube.com/iframe_api"></script>
 
   <script>
@@ -179,15 +180,16 @@
     let currentTrack = null;
     let timer = null;
 
-    // สร้างไฟล์เสียงเงียบ WAV Base64 สำหรับหลอกมือถือ
     const silentAudio = document.getElementById('silent-audio');
     silentAudio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
 
     const urlInput = document.getElementById('url-input');
     const btnPlay = document.getElementById('btn-play');
+    const btnText = document.getElementById('btn-text');
     const statusHint = document.getElementById('status-hint');
     const statusDot = document.getElementById('status-dot');
     const statusBadgeText = document.getElementById('status-badge-text');
+    const searchResults = document.getElementById('search-results');
     const vinyl = document.getElementById('vinyl');
     const trackCover = document.getElementById('track-cover');
     const trackTitle = document.getElementById('track-title');
@@ -266,6 +268,96 @@
       }
     }
 
+    // ฟังก์ชันค้นหาเพลงผ่าน YouTube Suggestion API
+    async function searchTracks(query) {
+      statusHint.innerText = `กำลังค้นหา "${query}"...`;
+      statusHint.className = "text-[11px] text-amber-500 px-1 truncate";
+      btnText.innerText = "ค้นหา...";
+
+      try {
+        const res = await fetch(`https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        const suggestions = data[1] || [];
+
+        if (suggestions.length === 0) {
+          statusHint.innerText = "ไม่พบผลการค้นหา ลองคำอื่นดูครับ";
+          statusHint.className = "text-[11px] text-zinc-400 px-1 truncate";
+          searchResults.classList.add('hidden');
+          return;
+        }
+
+        renderSearchResults(suggestions.slice(0, 6));
+      } catch (err) {
+        // หากค้นหาไม่ได้ให้ส่งคำค้นหาไปเปิดบน IFrame โดยตรง
+        playSongBySearch(query);
+      } finally {
+        btnText.innerText = "ค้นหา / เล่น";
+      }
+    }
+
+    function renderSearchResults(items) {
+      searchResults.innerHTML = '';
+      items.forEach(text => {
+        const item = document.createElement('div');
+        item.className = "flex items-center gap-3 p-2.5 rounded-lg hover:bg-zinc-900 cursor-pointer transition active:scale-[0.98] text-zinc-200 text-xs";
+        item.innerHTML = `
+          <i class="fa-brands fa-youtube text-red-500"></i>
+          <span class="flex-1 truncate">${text}</span>
+          <i class="fa-solid fa-arrow-right text-[10px] text-zinc-600"></i>
+        `;
+        item.addEventListener('click', () => {
+          searchResults.classList.add('hidden');
+          urlInput.value = text;
+          playSongBySearch(text);
+        });
+        searchResults.appendChild(item);
+      });
+      searchResults.classList.remove('hidden');
+    }
+
+    // ปิดกล่องผลการค้นหาเมื่อแตะข้างนอก
+    document.addEventListener('click', (e) => {
+      if (!searchResults.contains(e.target) && e.target !== urlInput && e.target !== btnPlay) {
+        searchResults.classList.add('hidden');
+      }
+    });
+
+    function playSongBySearch(query) {
+      if (!isReady || !player) return;
+      statusHint.innerText = `กำลังโหลดเพลง "${query}"...`;
+      statusHint.className = "text-[11px] text-amber-500 px-1 truncate";
+
+      // ส่งคำค้นหาให้ YouTube Player โหลดคลิปแรกของผลลัพธ์ทันที
+      player.loadPlaylist({
+        listType: 'search',
+        list: query
+      });
+
+      trackTitle.innerText = query;
+      trackAuthor.innerText = "YouTube Music";
+      trackCover.src = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&auto=format&fit=crop&q=80";
+
+      // รออัปเดตชื่อเพลงจริงจาก Player
+      setTimeout(() => {
+        if (player.getVideoData) {
+          const vData = player.getVideoData();
+          if (vData && vData.title) {
+            currentTrack = {
+              id: vData.video_id,
+              title: vData.title,
+              author: vData.author || "YouTube Artist",
+              cover: `https://img.youtube.com/vi/${vData.video_id}/hqdefault.jpg`,
+              timestamp: Date.now()
+            };
+            trackTitle.innerText = currentTrack.title;
+            trackAuthor.innerText = currentTrack.author;
+            trackCover.src = currentTrack.cover;
+            saveHistory(currentTrack);
+          }
+        }
+      }, 2000);
+    }
+
     async function playSong(videoId) {
       if (!isReady || !player) {
         alert("กำลังโหลดระบบเครื่องเล่น กรุณารอสักครู่");
@@ -304,14 +396,18 @@
       saveHistory(currentTrack);
     }
 
+    // จัดการปุ่มกด (ตรวจจับว่าวางลิงก์หรือพิมพ์ค้นหา)
     btnPlay.addEventListener('click', () => {
-      const id = extractVideoId(urlInput.value);
-      if (id) {
-        playSong(id);
+      const val = urlInput.value.trim();
+      if (!val) return;
+
+      const videoId = extractVideoId(val);
+      if (videoId) {
+        searchResults.classList.add('hidden');
+        playSong(videoId);
         urlInput.value = '';
       } else {
-        statusHint.innerText = "กรุณาใส่ลิงก์ YouTube ให้ถูกต้อง";
-        statusHint.className = "text-[11px] text-red-400 px-1 truncate";
+        searchTracks(val);
       }
     });
 
@@ -320,7 +416,7 @@
     });
 
     btnToggle.addEventListener('click', () => {
-      if (!isReady || !currentVideoId) return;
+      if (!isReady) return;
       const state = player.getPlayerState();
       if (state === YT.PlayerState.PLAYING) {
         player.pauseVideo();
@@ -351,11 +447,11 @@
     });
 
     document.getElementById('btn-backward').addEventListener('click', () => {
-      if (isReady && currentVideoId) player.seekTo(Math.max(0, player.getCurrentTime() - 10), true);
+      if (isReady) player.seekTo(Math.max(0, player.getCurrentTime() - 10), true);
     });
 
     document.getElementById('btn-forward').addEventListener('click', () => {
-      if (isReady && currentVideoId) player.seekTo(player.getCurrentTime() + 10, true);
+      if (isReady) player.seekTo(player.getCurrentTime() + 10, true);
     });
 
     function setupMediaSession() {
@@ -382,6 +478,7 @@
     }
 
     function saveHistory(item) {
+      if (!item || !item.id) return;
       let list = getHistory().filter(x => x.id !== item.id);
       list.unshift(item);
       if (list.length > 30) list.pop();
