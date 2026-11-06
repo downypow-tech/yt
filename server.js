@@ -18,35 +18,38 @@ app.get('/api/stream', async (req, res) => {
   const ytUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
   try {
-    res.setHeader('Content-Type', 'audio/webm');
+    // 1. ดึงข้อมูลวิดีโอเพื่อเลือกฟอร์แมตเสียงโดยตรง
+    const info = await ytdl.getInfo(ytUrl);
+    
+    // เลือกฟอร์แมตเสียงแบบ MP4/M4A เพื่อให้เบราว์เซอร์เล่นได้ทันทีโดยไม่ต้องรอแปลง
+    const format = ytdl.chooseFormat(info.formats, {
+      quality: 'highestaudio',
+      filter: (f) => f.container === 'mp4' && !f.hasVideo && f.hasAudio
+    }) || ytdl.chooseFormat(info.formats, { quality: 'highestaudio', filter: 'audioonly' });
+
+    if (!format) {
+      return res.status(404).send('Audio format not found');
+    }
+
+    // 2. ตั้งค่า Header สำหรับ Audio Streaming
+    res.setHeader('Content-Type', format.mimeType || 'audio/mp4');
     res.setHeader('Accept-Ranges', 'bytes');
 
-    // ดึง Audio Stream คุณภาพต่ำลงเล็กน้อยเพื่อความเร็วและลดการตรวจจับ
-    const stream = ytdl(ytUrl, {
-      filter: 'audioonly',
-      quality: 'lowestaudio',
-      highWaterMark: 1 << 23,
-      requestOptions: {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept-Language': 'en-US,en;q=0.9'
-        }
-      }
+    // 3. ปล่อย Stream ข้อมูลตรงไปยังเครื่องผู้ใช้
+    const stream = ytdl.downloadFromInfo(info, {
+      format: format,
+      highWaterMark: 1 << 20 // ขนาดบัฟเฟอร์เริ่มต้น 1MB ให้โหลดไว
     });
 
     stream.on('error', (err) => {
-      console.error('Stream Error:', err.message);
-      if (!res.headersSent) {
-        res.status(500).end();
-      }
+      console.error('ytdl stream error:', err.message);
+      if (!res.headersSent) res.status(500).end();
     });
 
     stream.pipe(res);
   } catch (err) {
-    console.error('Server Catch Error:', err.message);
-    if (!res.headersSent) {
-      res.status(500).end();
-    }
+    console.error('Fetch error:', err.message);
+    if (!res.headersSent) res.status(500).end();
   }
 });
 
