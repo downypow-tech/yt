@@ -49,7 +49,7 @@
     <div id="yt-player"></div>
   </div>
 
-  <div class="w-full max-w-md flex flex-col gap-4 my-auto">
+  <div class="w-full max-w-md flex flex-col gap-3.5 my-auto">
 
     <!-- Header Brand -->
     <header class="flex items-center justify-between border-b border-zinc-900 pb-3">
@@ -59,7 +59,7 @@
         </div>
         <div>
           <h1 class="text-lg font-black tracking-wider uppercase text-white">plam<span class="text-red-500">tube</span></h1>
-          <p class="text-[10px] text-zinc-500 font-medium">Search &amp; Stream Engine</p>
+          <p class="text-[10px] text-zinc-500 font-medium">Queue &bull; Timer &bull; Background Supported</p>
         </div>
       </div>
       <div id="status-badge" class="text-[11px] px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center gap-1.5">
@@ -74,26 +74,46 @@
         <input 
           type="text" 
           id="url-input" 
-          placeholder="พิมพ์ชื่อเพลง หรือ วางลิงก์ YouTube" 
-          class="w-full bg-zinc-900 border border-zinc-800 text-zinc-100 placeholder-zinc-500 rounded-xl pl-10 pr-24 py-3 text-sm focus:outline-none focus:border-red-600 transition"
+          placeholder="ค้นหาชื่อเพลง หรือ วางลิงก์เพลง / มิกซ์" 
+          class="w-full bg-zinc-900 border border-zinc-800 text-zinc-100 placeholder-zinc-500 rounded-xl pl-10 pr-24 py-2.5 text-sm focus:outline-none focus:border-red-600 transition"
         />
         <i class="fa-solid fa-magnifying-glass absolute left-3.5 text-zinc-500 text-xs"></i>
         <button 
           id="btn-play" 
-          class="absolute right-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs px-4 py-2 rounded-lg transition active:scale-95 shadow-md flex items-center gap-1.5"
+          class="absolute right-1 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs px-3.5 py-2 rounded-lg transition active:scale-95 shadow-md flex items-center gap-1.5"
         >
           <span id="btn-text">เล่นเพลง</span>
         </button>
       </div>
-      <p id="status-hint" class="text-[11px] text-zinc-500 px-1 truncate">พิมพ์ชื่อเพลงเพื่อค้นหา หรือวางลิงก์แล้วกดเล่น</p>
+
+      <!-- Action Sub-bar: Mix Mode & Sleep Timer -->
+      <div class="flex items-center justify-between px-1 text-[11px]">
+        <button id="btn-mix-mode" class="text-zinc-400 hover:text-red-400 flex items-center gap-1 transition">
+          <i class="fa-solid fa-wand-magic-sparkles text-red-500"></i> เปิดมิกซ์เพลงนี้
+        </button>
+        
+        <!-- Sleep Timer Selector -->
+        <div class="flex items-center gap-1.5 text-zinc-400">
+          <i class="fa-solid fa-moon text-amber-500 text-[10px]"></i>
+          <select id="timer-select" class="bg-zinc-900 border border-zinc-800 rounded px-1.5 py-0.5 text-[10px] text-zinc-300 focus:outline-none focus:border-red-600">
+            <option value="0">เล่นไปเรื่อยๆ</option>
+            <option value="15">หยุดใน 15 นาที</option>
+            <option value="30">หยุดใน 30 นาที</option>
+            <option value="45">หยุดใน 45 นาที</option>
+            <option value="60">หยุดใน 60 นาที</option>
+          </select>
+          <span id="timer-countdown" class="text-amber-500 text-[10px] hidden font-mono"></span>
+        </div>
+      </div>
+      <p id="status-hint" class="text-[10px] text-zinc-500 px-1 truncate">รองรับคิวเพลงและการปิดหน้าจอฟัง</p>
 
       <!-- Dropdown ผลการค้นหา -->
       <div id="search-results" class="hidden absolute top-14 left-0 right-0 bg-zinc-950/95 backdrop-blur-md border border-zinc-800 rounded-xl shadow-2xl p-2 z-50 max-h-72 overflow-y-auto space-y-1.5"></div>
     </div>
 
     <!-- Vinyl Player Display -->
-    <div class="flex flex-col items-center justify-center py-1">
-      <div id="vinyl" class="w-48 h-48 rounded-full bg-zinc-950 border-4 border-zinc-900 shadow-2xl shadow-red-950/20 flex items-center justify-center relative spin spin-paused">
+    <div class="flex flex-col items-center justify-center py-0.5">
+      <div id="vinyl" class="w-44 h-44 rounded-full bg-zinc-950 border-4 border-zinc-900 shadow-2xl shadow-red-950/20 flex items-center justify-center relative spin spin-paused">
         <div class="absolute inset-0 rounded-full border border-zinc-800/40 m-2 pointer-events-none"></div>
         <div class="absolute inset-0 rounded-full border border-zinc-800/30 m-6 pointer-events-none"></div>
         <div class="absolute inset-0 rounded-full border border-zinc-800/20 m-10 pointer-events-none"></div>
@@ -102,7 +122,7 @@
           id="track-cover" 
           src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&auto=format&fit=crop&q=80" 
           alt="Cover" 
-          class="w-20 h-20 rounded-full object-cover border-2 border-zinc-900 shadow-inner z-10"
+          class="w-18 h-18 rounded-full object-cover border-2 border-zinc-900 shadow-inner z-10"
         />
         <div class="w-5 h-5 bg-zinc-950 rounded-full border-2 border-zinc-800 z-20 absolute flex items-center justify-center">
           <div class="w-1.5 h-1.5 rounded-full bg-red-600"></div>
@@ -112,8 +132,8 @@
 
     <!-- Metadata Section -->
     <div class="text-center px-4">
-      <h2 id="track-title" class="text-base font-bold text-zinc-100 truncate">ยังไม่มีเพลงที่เล่น</h2>
-      <p id="track-author" class="text-xs text-zinc-400 mt-0.5 truncate">พิมพ์ค้นหาหรือวางลิงก์เพื่อเริ่มเล่น</p>
+      <h2 id="track-title" class="text-sm font-bold text-zinc-100 truncate">ยังไม่มีเพลงที่เล่น</h2>
+      <p id="track-author" class="text-[11px] text-zinc-400 mt-0.5 truncate">วางลิงก์หรือพิมพ์ค้นหาเพื่อเริ่มเล่น</p>
     </div>
 
     <!-- Progress / Seekbar -->
@@ -127,45 +147,57 @@
         step="0.1" 
         class="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-red-600"
       />
-      <div class="flex justify-between text-[11px] text-zinc-500 font-mono">
+      <div class="flex justify-between text-[10px] text-zinc-500 font-mono">
         <span id="current-time">0:00</span>
         <span id="duration-time">0:00</span>
       </div>
     </div>
 
     <!-- Controls -->
-    <div class="flex items-center justify-center gap-7">
-      <button id="btn-backward" class="text-zinc-400 hover:text-white transition active:scale-90 text-lg">
+    <div class="flex items-center justify-center gap-5">
+      <button id="btn-prev-track" title="เพลงก่อนหน้า" class="text-zinc-400 hover:text-white transition active:scale-90 text-sm">
+        <i class="fa-solid fa-backward-step"></i>
+      </button>
+      <button id="btn-backward" title="ย้อน 10 วินาที" class="text-zinc-400 hover:text-white transition active:scale-90 text-sm">
         <i class="fa-solid fa-rotate-left"></i>
       </button>
-      <button id="btn-toggle" class="w-14 h-14 bg-red-600 text-white rounded-full flex items-center justify-center text-xl hover:bg-red-700 transition active:scale-95 shadow-lg shadow-red-600/30">
+      <button id="btn-toggle" class="w-12 h-12 bg-red-600 text-white rounded-full flex items-center justify-center text-lg hover:bg-red-700 transition active:scale-95 shadow-lg shadow-red-600/30">
         <i id="toggle-icon" class="fa-solid fa-play ml-0.5"></i>
       </button>
-      <button id="btn-forward" class="text-zinc-400 hover:text-white transition active:scale-90 text-lg">
+      <button id="btn-forward" title="ไปข้างหน้า 10 วินาที" class="text-zinc-400 hover:text-white transition active:scale-90 text-sm">
         <i class="fa-solid fa-rotate-right"></i>
+      </button>
+      <button id="btn-next-track" title="เพลงถัดไป" class="text-zinc-400 hover:text-white transition active:scale-90 text-sm">
+        <i class="fa-solid fa-forward-step"></i>
       </button>
     </div>
 
-    <!-- History Header & Container -->
-    <div class="border-t border-zinc-900 pt-3 flex flex-col gap-2">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="text-xs font-bold tracking-wider uppercase text-zinc-400 flex items-center gap-1.5">
-            <i class="fa-solid fa-clock-rotate-left text-red-500"></i> ประวัติการฟัง
-          </span>
-          <span id="history-badge" class="text-[10px] bg-zinc-900 text-zinc-400 px-1.5 py-0.2 rounded font-mono">0</span>
+    <!-- Tab Section: Queue vs History -->
+    <div class="border-t border-zinc-900 pt-2 flex flex-col gap-2">
+      <div class="flex items-center justify-between border-b border-zinc-900 pb-2">
+        <div class="flex gap-4">
+          <button id="tab-queue-btn" class="text-xs font-bold uppercase tracking-wider text-red-500 border-b-2 border-red-500 pb-1 flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-list-ol"></i> คิวเพลง (<span id="queue-badge">0</span>)
+          </button>
+          <button id="tab-history-btn" class="text-xs font-bold uppercase tracking-wider text-zinc-500 pb-1 flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-clock-rotate-left"></i> ประวัติ (<span id="history-badge">0</span>)
+          </button>
         </div>
-        <button id="btn-clear-history" class="text-[11px] text-zinc-500 hover:text-red-400 transition">
+        <button id="btn-clear-tab" class="text-[10px] text-zinc-500 hover:text-red-400 transition">
           ล้างทั้งหมด
         </button>
       </div>
 
-      <div id="history-container" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+      <!-- Container: Queue List -->
+      <div id="queue-container" class="space-y-2 max-h-40 overflow-y-auto pr-1"></div>
+
+      <!-- Container: History List -->
+      <div id="history-container" class="space-y-2 max-h-40 overflow-y-auto pr-1 hidden"></div>
     </div>
 
   </div>
 
-  <footer class="text-[11px] text-zinc-600 text-center py-2">
+  <footer class="text-[10px] text-zinc-600 text-center py-1">
     plamtube &bull; Red & Black Engine
   </footer>
 
@@ -177,13 +209,18 @@
     let currentVideoId = null;
     let currentTrack = null;
     let timer = null;
+    let sleepTimerInterval = null;
+    let sleepSecondsRemaining = 0;
+
+    // ระบบคิวเพลง
+    let songQueue = [];
+    let currentTab = 'queue'; // 'queue' หรือ 'history'
 
     const silentAudio = document.getElementById('silent-audio');
     silentAudio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
 
     const urlInput = document.getElementById('url-input');
     const btnPlay = document.getElementById('btn-play');
-    const btnText = document.getElementById('btn-text');
     const statusHint = document.getElementById('status-hint');
     const statusDot = document.getElementById('status-dot');
     const statusBadgeText = document.getElementById('status-badge-text');
@@ -197,9 +234,16 @@
     const durationElem = document.getElementById('duration-time');
     const btnToggle = document.getElementById('btn-toggle');
     const toggleIcon = document.getElementById('toggle-icon');
+    const queueContainer = document.getElementById('queue-container');
     const historyContainer = document.getElementById('history-container');
+    const queueBadge = document.getElementById('queue-badge');
     const historyBadge = document.getElementById('history-badge');
-    const btnClearHistory = document.getElementById('btn-clear-history');
+    const tabQueueBtn = document.getElementById('tab-queue-btn');
+    const tabHistoryBtn = document.getElementById('tab-history-btn');
+    const btnClearTab = document.getElementById('btn-clear-tab');
+    const btnMixMode = document.getElementById('btn-mix-mode');
+    const timerSelect = document.getElementById('timer-select');
+    const timerCountdown = document.getElementById('timer-countdown');
 
     function initYouTube() {
       if (player) return;
@@ -218,12 +262,14 @@
             isReady = true;
             statusDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-500";
             statusBadgeText.innerText = "พร้อมใช้งาน";
+            renderQueue();
             renderHistory();
           },
           'onStateChange': onStateChange,
           'onError': () => {
             statusHint.innerText = "ไม่สามารถเล่นเพลงนี้ได้";
-            statusHint.className = "text-[11px] text-red-500 px-1 truncate";
+            statusHint.className = "text-[10px] text-red-500 px-1 truncate";
+            playNextInQueue();
           }
         }
       });
@@ -238,13 +284,21 @@
       }
     }, 500);
 
-    function extractVideoId(url) {
-      if (!url) return null;
+    function parseYouTubeInput(url) {
+      if (!url) return { videoId: null, listId: null };
       url = url.trim();
-      const match = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-      if (match && match[1]) return match[1];
-      if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
-      return null;
+
+      const listMatch = url.match(/[?&]list=([a-zA-Z0-9_-]+)/);
+      const listId = listMatch ? listMatch[1] : null;
+
+      const videoMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+      let videoId = videoMatch ? videoMatch[1] : null;
+
+      if (!videoId && /^[a-zA-Z0-9_-]{11}$/.test(url)) {
+        videoId = url;
+      }
+
+      return { videoId, listId };
     }
 
     function formatTime(s) {
@@ -258,20 +312,50 @@
       if (e.data === YT.PlayerState.PLAYING) {
         vinyl.classList.remove('spin-paused');
         toggleIcon.className = "fa-solid fa-pause";
-        statusHint.innerText = "กำลังเล่นเสียง";
-        statusHint.className = "text-[11px] text-emerald-500 px-1 truncate";
+        statusHint.innerText = "กำลังเล่นเสียง • ปิดหน้าจอได้ทันที";
+        statusHint.className = "text-[10px] text-emerald-500 px-1 truncate";
         silentAudio.play().catch(() => {});
         startTimer();
-        setupMediaSession();
-      } else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) {
+        syncTrackInfo();
+      } else if (e.data === YT.PlayerState.PAUSED) {
         vinyl.classList.add('spin-paused');
         toggleIcon.className = "fa-solid fa-play ml-0.5";
         silentAudio.pause();
         clearInterval(timer);
+      } else if (e.data === YT.PlayerState.ENDED) {
+        vinyl.classList.add('spin-paused');
+        toggleIcon.className = "fa-solid fa-play ml-0.5";
+        silentAudio.pause();
+        clearInterval(timer);
+        // เมื่อเพลงจบ เล่นคิวถัดไปทันที
+        playNextInQueue();
       }
     }
 
-    // ฟังก์ชันรับผลลัพธ์คำค้นหาจาก Google Suggest (JSONP)
+    function syncTrackInfo() {
+      setTimeout(() => {
+        if (player && player.getVideoData) {
+          const vData = player.getVideoData();
+          if (vData && vData.video_id) {
+            currentVideoId = vData.video_id;
+            currentTrack = {
+              id: vData.video_id,
+              title: vData.title || "กำลังเล่นในมิกซ์",
+              author: vData.author || "YouTube Artist",
+              cover: `https://img.youtube.com/vi/${vData.video_id}/hqdefault.jpg`,
+              timestamp: Date.now()
+            };
+            trackTitle.innerText = currentTrack.title;
+            trackAuthor.innerText = currentTrack.author;
+            trackCover.src = currentTrack.cover;
+            saveHistory(currentTrack);
+            setupMediaSession();
+          }
+        }
+      }, 1000);
+    }
+
+    // JSONP สำหรับค้นหา
     window.handleSuggestions = function(data) {
       const suggestions = (data && data[1]) ? data[1] : [];
       if (suggestions.length === 0) {
@@ -283,7 +367,7 @@
 
     function searchTracks(query) {
       statusHint.innerText = `กำลังค้นหา "${query}"...`;
-      statusHint.className = "text-[11px] text-amber-500 px-1 truncate";
+      statusHint.className = "text-[10px] text-amber-500 px-1 truncate";
 
       const oldScript = document.getElementById('jsonp-search');
       if (oldScript) oldScript.remove();
@@ -302,17 +386,30 @@
       items.forEach(itemData => {
         const text = Array.isArray(itemData) ? itemData[0] : itemData;
         const div = document.createElement('div');
-        div.className = "flex items-center gap-3 p-2.5 rounded-lg hover:bg-zinc-900 cursor-pointer transition active:scale-[0.98] text-zinc-200 text-xs";
+        div.className = "flex items-center justify-between p-2 rounded-lg hover:bg-zinc-900 cursor-pointer transition active:scale-[0.98] text-zinc-200 text-xs";
+        
         div.innerHTML = `
-          <i class="fa-brands fa-youtube text-red-500"></i>
-          <span class="flex-1 truncate">${text}</span>
-          <i class="fa-solid fa-arrow-right text-[10px] text-zinc-600"></i>
+          <div class="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
+            <i class="fa-brands fa-youtube text-red-500"></i>
+            <span class="truncate">${text}</span>
+          </div>
+          <button class="btn-add-queue bg-zinc-800 hover:bg-red-600 text-zinc-300 hover:text-white text-[10px] px-2 py-1 rounded transition flex items-center gap-1">
+            <i class="fa-solid fa-plus"></i> คิว
+          </button>
         `;
-        div.addEventListener('click', () => {
+
+        div.querySelector('.flex-1').addEventListener('click', () => {
           searchResults.classList.add('hidden');
           urlInput.value = text;
           playSongBySearch(text);
         });
+
+        div.querySelector('.btn-add-queue').addEventListener('click', (e) => {
+          e.stopPropagation();
+          searchResults.classList.add('hidden');
+          addToQueueBySearch(text);
+        });
+
         searchResults.appendChild(div);
       });
       searchResults.classList.remove('hidden');
@@ -324,61 +421,88 @@
       }
     });
 
-    // ค้นหาและดึง Video ID ตรงจากเซิร์ฟเวอร์
     async function playSongBySearch(query) {
-      if (!isReady || !player) {
-        statusHint.innerText = "กำลังเชื่อมต่อระบบ กรุณารอ 2 วินาทีแล้วลองใหม่";
-        return;
-      }
-      statusHint.innerText = `กำลังค้นหาและดึงเพลง "${query}"...`;
-      statusHint.className = "text-[11px] text-amber-500 px-1 truncate";
+      if (!isReady || !player) return;
+      statusHint.innerText = `กำลังดึงเพลง "${query}"...`;
+      statusHint.className = "text-[10px] text-amber-500 px-1 truncate";
 
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
         const data = await res.json();
-
         if (data && data.videoId) {
           playSong(data.videoId);
         } else {
-          statusHint.innerText = "ไม่พบเพลงนี้ ลองใช้คำค้นหาอื่นดูครับ";
-          statusHint.className = "text-[11px] text-red-400 px-1 truncate";
+          statusHint.innerText = "ไม่พบเพลงนี้ ลองคำอื่นดูครับ";
+          statusHint.className = "text-[10px] text-red-400 px-1 truncate";
         }
       } catch (err) {
-        statusHint.innerText = "การค้นหาขัดข้อง กรุณาลองใหม่อีกครั้ง";
-        statusHint.className = "text-[11px] text-red-500 px-1 truncate";
+        statusHint.innerText = "การค้นหาขัดข้อง";
+        statusHint.className = "text-[10px] text-red-500 px-1 truncate";
       }
     }
 
-    async function playSong(videoId) {
-      if (!isReady || !player) {
-        statusHint.innerText = "ระบบกำลังเริ่มต้น กรุณากดใหม่อีกครั้ง";
-        return;
+    async function addToQueueBySearch(query) {
+      statusHint.innerText = `กำลังเพิ่ม "${query}" เข้าคิว...`;
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        if (data && data.videoId) {
+          const meta = await fetchMetadata(data.videoId);
+          enqueueTrack({
+            id: data.videoId,
+            title: meta.title,
+            author: meta.author,
+            cover: `https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`
+          });
+          statusHint.innerText = `เพิ่ม "${meta.title}" ในคิวแล้ว`;
+          statusHint.className = "text-[10px] text-emerald-500 px-1 truncate";
+        }
+      } catch (e) {
+        statusHint.innerText = "ไม่สามารถเพิ่มเข้าคิวได้";
       }
-      currentVideoId = videoId;
-      statusHint.innerText = "กำลังโหลดเพลง...";
-      statusHint.className = "text-[11px] text-amber-500 px-1 truncate";
+    }
 
-      player.loadVideoById(videoId);
-
+    async function fetchMetadata(videoId) {
       try {
         const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
         const data = await res.json();
-        currentTrack = {
-          id: videoId,
+        return {
           title: data.title || `Track (${videoId})`,
-          author: data.author_name || "YouTube Creator",
-          cover: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-          timestamp: Date.now()
+          author: data.author_name || "YouTube Creator"
         };
       } catch {
-        currentTrack = {
-          id: videoId,
-          title: `Track (${videoId})`,
-          author: "YouTube Creator",
-          cover: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-          timestamp: Date.now()
-        };
+        return { title: `Track (${videoId})`, author: "YouTube Creator" };
       }
+    }
+
+    function playPlaylist(listId, videoId = null) {
+      if (!isReady || !player) return;
+      statusHint.innerText = "กำลังเริ่มเล่นมิกซ์เพลงแนะนำ...";
+      statusHint.className = "text-[10px] text-amber-500 px-1 truncate";
+
+      player.loadPlaylist({
+        list: listId,
+        listType: 'playlist',
+        index: 0
+      });
+    }
+
+    async function playSong(videoId) {
+      if (!isReady || !player) return;
+      currentVideoId = videoId;
+      statusHint.innerText = "กำลังโหลดเพลง...";
+      statusHint.className = "text-[10px] text-amber-500 px-1 truncate";
+
+      player.loadVideoById(videoId);
+
+      const meta = await fetchMetadata(videoId);
+      currentTrack = {
+        id: videoId,
+        title: meta.title,
+        author: meta.author,
+        cover: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+        timestamp: Date.now()
+      };
 
       trackTitle.innerText = currentTrack.title;
       trackAuthor.innerText = currentTrack.author;
@@ -386,12 +510,155 @@
       saveHistory(currentTrack);
     }
 
+    // ระบบจัดการคิวเพลง (Queue Management)
+    function enqueueTrack(item) {
+      songQueue.push(item);
+      renderQueue();
+      // ถ้าไม่มีเพลงเล่นอยู่ ให้เริ่มเล่นทันที
+      if (!currentVideoId || (player && player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING)) {
+        playNextInQueue();
+      }
+    }
+
+    function playNextInQueue() {
+      if (songQueue.length > 0) {
+        const nextTrack = songQueue.shift();
+        renderQueue();
+        playSong(nextTrack.id);
+      } else if (player && player.nextVideo) {
+        // ถ้าคิวหมดแต่เปิดมิกซ์อยู่ ให้เล่นเพลงถัดไปของมิกซ์
+        player.nextVideo();
+      }
+    }
+
+    function renderQueue() {
+      queueBadge.innerText = songQueue.length;
+      queueContainer.innerHTML = '';
+
+      if (songQueue.length === 0) {
+        queueContainer.innerHTML = `
+          <div class="text-center py-6 text-zinc-600 text-xs">
+            <i class="fa-solid fa-list-ol text-lg mb-1 text-zinc-700"></i>
+            <p>ยังไม่มีเพลงในคิวถัดไป</p>
+            <p class="text-[10px] text-zinc-700 mt-0.5">กด "+ คิว" จากการค้นหาเพื่อเพิ่มเพลง</p>
+          </div>
+        `;
+        return;
+      }
+
+      songQueue.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = "flex items-center gap-3 p-2 bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/60 rounded-xl cursor-pointer transition text-xs group";
+        div.innerHTML = `
+          <span class="text-[10px] font-mono text-zinc-500 w-4 text-center">${index + 1}</span>
+          <img src="${item.cover}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-zinc-800" />
+          <div class="flex-1 min-w-0 pr-1">
+            <p class="text-xs font-medium truncate text-zinc-200 group-hover:text-red-400 transition">${item.title}</p>
+            <p class="text-[10px] text-zinc-500 truncate">${item.author}</p>
+          </div>
+          <button class="btn-del-queue text-zinc-600 hover:text-red-500 p-2 text-xs transition">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        `;
+
+        div.addEventListener('click', () => {
+          songQueue.splice(index, 1);
+          renderQueue();
+          playSong(item.id);
+        });
+
+        div.querySelector('.btn-del-queue').addEventListener('click', (e) => {
+          e.stopPropagation();
+          songQueue.splice(index, 1);
+          renderQueue();
+        });
+
+        queueContainer.appendChild(div);
+      });
+    }
+
+    // สลับแท็บ Queue กับ History
+    tabQueueBtn.addEventListener('click', () => {
+      currentTab = 'queue';
+      tabQueueBtn.className = "text-xs font-bold uppercase tracking-wider text-red-500 border-b-2 border-red-500 pb-1 flex items-center gap-1.5 transition";
+      tabHistoryBtn.className = "text-xs font-bold uppercase tracking-wider text-zinc-500 pb-1 flex items-center gap-1.5 transition";
+      queueContainer.classList.remove('hidden');
+      historyContainer.classList.add('hidden');
+    });
+
+    tabHistoryBtn.addEventListener('click', () => {
+      currentTab = 'history';
+      tabHistoryBtn.className = "text-xs font-bold uppercase tracking-wider text-red-500 border-b-2 border-red-500 pb-1 flex items-center gap-1.5 transition";
+      tabQueueBtn.className = "text-xs font-bold uppercase tracking-wider text-zinc-500 pb-1 flex items-center gap-1.5 transition";
+      historyContainer.classList.remove('hidden');
+      queueContainer.classList.add('hidden');
+    });
+
+    btnClearTab.addEventListener('click', () => {
+      if (currentTab === 'queue') {
+        songQueue = [];
+        renderQueue();
+      } else {
+        localStorage.removeItem('plamtube_history');
+        renderHistory();
+      }
+    });
+
+    // ระบบตั้งเวลาปิด (Sleep Timer)
+    timerSelect.addEventListener('change', (e) => {
+      clearInterval(sleepTimerInterval);
+      const minutes = parseInt(e.target.value);
+      if (minutes === 0) {
+        timerCountdown.classList.add('hidden');
+        return;
+      }
+
+      sleepSecondsRemaining = minutes * 60;
+      timerCountdown.classList.remove('hidden');
+      updateTimerDisplay();
+
+      sleepTimerInterval = setInterval(() => {
+        sleepSecondsRemaining--;
+        updateTimerDisplay();
+
+        if (sleepSecondsRemaining <= 0) {
+          clearInterval(sleepTimerInterval);
+          if (player && player.pauseVideo) player.pauseVideo();
+          silentAudio.pause();
+          timerCountdown.innerText = "หยุดแล้ว";
+          timerSelect.value = "0";
+          statusHint.innerText = "ตัวจับเวลาทำงาน: หยุดเล่นเพลงแล้ว";
+          statusHint.className = "text-[10px] text-amber-500 px-1 truncate";
+        }
+      }, 1000);
+    });
+
+    function updateTimerDisplay() {
+      const m = Math.floor(sleepSecondsRemaining / 60);
+      const s = sleepSecondsRemaining % 60;
+      timerCountdown.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    // ปุ่มเปิดมิกซ์วิทยุ
+    btnMixMode.addEventListener('click', () => {
+      if (!currentVideoId) {
+        alert("กรุณาเลือกเล่นเพลงก่อนเพื่อเปิดมิกซ์");
+        return;
+      }
+      playPlaylist(`RD${currentVideoId}`);
+    });
+
     btnPlay.addEventListener('click', () => {
       const val = urlInput.value.trim();
       if (!val) return;
 
-      const videoId = extractVideoId(val);
-      if (videoId) {
+      const { videoId, listId } = parseYouTubeInput(val);
+
+      if (listId) {
+        searchResults.classList.add('hidden');
+        playPlaylist(listId, videoId);
+        urlInput.value = '';
+      } else if (videoId) {
         searchResults.classList.add('hidden');
         playSong(videoId);
         urlInput.value = '';
@@ -412,6 +679,14 @@
       } else {
         player.playVideo();
       }
+    });
+
+    document.getElementById('btn-next-track').addEventListener('click', () => {
+      playNextInQueue();
+    });
+
+    document.getElementById('btn-prev-track').addEventListener('click', () => {
+      if (isReady && player && player.previousVideo) player.previousVideo();
     });
 
     function startTimer() {
@@ -448,11 +723,15 @@
         navigator.mediaSession.metadata = new MediaMetadata({
           title: currentTrack.title,
           artist: currentTrack.author,
-          album: 'plamtube',
+          album: 'plamtube Player',
           artwork: [{ src: currentTrack.cover, sizes: '512x512', type: 'image/jpeg' }]
         });
         navigator.mediaSession.setActionHandler('play', () => player.playVideo());
         navigator.mediaSession.setActionHandler('pause', () => player.pauseVideo());
+        navigator.mediaSession.setActionHandler('nexttrack', () => playNextInQueue());
+        navigator.mediaSession.setActionHandler('previoustrack', () => {
+          if (player.previousVideo) player.previousVideo();
+        });
         navigator.mediaSession.setActionHandler('seekbackward', () => {
           player.seekTo(Math.max(0, player.getCurrentTime() - 10), true);
         });
@@ -490,7 +769,7 @@
       if (list.length === 0) {
         historyContainer.innerHTML = `
           <div class="text-center py-6 text-zinc-600 text-xs">
-            <i class="fa-solid fa-compact-disc text-xl mb-1 text-zinc-700"></i>
+            <i class="fa-solid fa-compact-disc text-lg mb-1 text-zinc-700"></i>
             <p>ยังไม่มีประวัติการฟังเพลง</p>
           </div>
         `;
@@ -500,10 +779,10 @@
       list.forEach(item => {
         const timeAgo = formatTimeAgo(item.timestamp);
         const div = document.createElement('div');
-        div.className = "flex items-center gap-3 p-2 bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/60 hover:border-red-900/40 rounded-xl cursor-pointer transition active:scale-[0.98] group";
+        div.className = "flex items-center gap-3 p-2 bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/60 rounded-xl cursor-pointer transition active:scale-[0.98] group";
 
         div.innerHTML = `
-          <img src="${item.cover}" class="w-12 h-12 rounded-lg object-cover flex-shrink-0 bg-zinc-800" />
+          <img src="${item.cover}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-zinc-800" />
           <div class="flex-1 min-w-0 pr-1">
             <p class="text-xs font-semibold truncate text-zinc-200 group-hover:text-red-400 transition">${item.title}</p>
             <div class="flex items-center gap-2 mt-0.5 text-[10px] text-zinc-500">
@@ -531,11 +810,6 @@
       if (diff < 86400) return `${Math.floor(diff / 3600)} ชม. ที่แล้ว`;
       return `${Math.floor(diff / 86400)} วันที่แล้ว`;
     }
-
-    btnClearHistory.addEventListener('click', () => {
-      localStorage.removeItem('plamtube_history');
-      renderHistory();
-    });
 
     renderHistory();
   </script>
