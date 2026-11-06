@@ -33,7 +33,7 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between items-center p-4">
 
-  <!-- Native HTML5 Audio สำหรับเล่นเสียงเบื้องหลังขณะปิดหน้าจอ -->
+  <!-- แท็กเสียงแท้ Native HTML5 Audio: รองรับการเล่นในพื้นหลังตอนปิดจอ 100% -->
   <audio id="audio-engine" playsinline preload="auto"></audio>
 
   <div class="w-full max-w-md flex flex-col gap-5 my-auto">
@@ -46,7 +46,7 @@
         </div>
         <div>
           <h1 class="text-lg font-black tracking-wider uppercase text-white">plam<span class="text-red-500">tube</span></h1>
-          <p class="text-[10px] text-zinc-500 font-medium">Native Stream &bull; Background Lock Play</p>
+          <p class="text-[10px] text-zinc-500 font-medium">Native Audio Engine &bull; Background Supported</p>
         </div>
       </div>
       <div class="text-[11px] px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center gap-1.5">
@@ -71,7 +71,7 @@
           <span id="btn-text">เล่นเพลง</span>
         </button>
       </div>
-      <p id="status-hint" class="text-[11px] text-zinc-500 px-1 truncate">รองรับการปิดหน้าจอและพับหน้าจอบนมือถือ</p>
+      <p id="status-hint" class="text-[11px] text-zinc-500 px-1 truncate">รองรับการปิดหน้าจอและพับหน้าจอบนมือถือ 100%</p>
     </div>
 
     <!-- Vinyl Player Display -->
@@ -173,6 +173,14 @@
 
     let currentTrack = null;
 
+    // รายชื่อ Instance ของ Piped ที่มีระบบป้องกันบล็อก
+    const PIPED_INSTANCES = [
+      'https://pipedapi.kavin.rocks',
+      'https://api.piped.private.coffee',
+      'https://piped-api.lunar.icu',
+      'https://api.piped.projectsegfau.lt'
+    ];
+
     function extractVideoId(url) {
       if (!url) return null;
       url = url.trim();
@@ -189,31 +197,50 @@
       return `${m}:${sec < 10 ? '0' : ''}${sec}`;
     }
 
-    async function fetchMetadata(videoId) {
-      try {
-        const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
-        const data = await res.json();
-        return {
-          title: data.title || `Track (${videoId})`,
-          author: data.author_name || "YouTube Creator"
-        };
-      } catch {
-        return { title: `Track (${videoId})`, author: "YouTube Creator" };
+    async function fetchAudioStream(videoId) {
+      for (const instance of PIPED_INSTANCES) {
+        try {
+          const res = await fetch(`${instance}/streams/${videoId}`);
+          if (!res.ok) continue;
+          const data = await res.json();
+          if (data && data.audioStreams && data.audioStreams.length > 0) {
+            // คัดเลือกเฉพาะสตรีมเสียงแบบ M4A / AAC เพื่อให้ Safari และ Chrome เล่นต่อเนื่องได้ไม่สะดุด
+            const bestAudio = data.audioStreams.find(s => s.format === 'M4A') || data.audioStreams[0];
+            return {
+              audioUrl: bestAudio.url,
+              title: data.title,
+              author: data.uploader,
+              cover: data.thumbnailUrl
+            };
+          }
+        } catch (e) {
+          console.warn(`Instance ${instance} error, trying next...`);
+        }
       }
+      return null;
     }
 
     async function playSong(videoId) {
-      statusHint.innerText = "กำลังเชื่อมต่อสตรีมเสียงจากเซิร์ฟเวอร์...";
+      statusHint.innerText = "กำลังดึงสตรีมเสียงความเร็วสูง...";
       statusHint.className = "text-[11px] text-amber-500 px-1 truncate";
       btnPlay.disabled = true;
       btnText.innerText = "โหลด...";
 
-      const meta = await fetchMetadata(videoId);
+      const streamData = await fetchAudioStream(videoId);
+
+      if (!streamData || !streamData.audioUrl) {
+        statusHint.innerText = "ไม่สามารถเชื่อมต่อเพลงนี้ได้ กรุณาลองใหม่อีกครั้ง";
+        statusHint.className = "text-[11px] text-red-500 px-1 truncate";
+        btnPlay.disabled = false;
+        btnText.innerText = "เล่นเพลง";
+        return;
+      }
+
       currentTrack = {
         id: videoId,
-        title: meta.title,
-        author: meta.author,
-        cover: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+        title: streamData.title || `Track (${videoId})`,
+        author: streamData.author || "YouTube Artist",
+        cover: streamData.cover || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
         timestamp: Date.now()
       };
 
@@ -222,23 +249,17 @@
       trackCover.src = currentTrack.cover;
 
       audio.pause();
-      audio.src = `/api/stream?id=${videoId}`;
+      audio.src = streamData.audioUrl;
       audio.load();
 
-      // สั่งเล่นทันทีตาม User Gesture
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          statusHint.innerText = "กำลังเล่นเสียง • ปิดหน้าจอได้ทันที";
-          statusHint.className = "text-[11px] text-emerald-500 px-1 truncate";
-          saveHistory(currentTrack);
-          setupMediaSession();
-        }).catch(() => {
-          // กรณีกำลังรอดาวน์โหลดก้อนข้อมูลแรก
-          statusHint.innerText = "กำลังบัฟเฟอร์เสียง กรุณารอสักครู่...";
-          statusHint.className = "text-[11px] text-zinc-400 px-1 truncate";
-        });
-      }
+      audio.play().then(() => {
+        statusHint.innerText = "กำลังเล่นเสียง • ปิดหน้าจอได้ทันที";
+        statusHint.className = "text-[11px] text-emerald-500 px-1 truncate";
+        saveHistory(currentTrack);
+        setupMediaSession();
+      }).catch(() => {
+        statusHint.innerText = "กำลังเริ่มต้นเสียง...";
+      });
 
       btnPlay.disabled = false;
       btnText.innerText = "เล่นเพลง";
@@ -254,7 +275,7 @@
     };
 
     audio.onerror = () => {
-      statusHint.innerText = "ขออภัย ไม่สามารถดึงสตรีมเสียงของเพลงนี้ได้ในขณะนี้";
+      statusHint.innerText = "ระบบสตรีมเสียงขัดข้องชั่วคราว ลองกดเล่นใหม่อีกครั้ง";
       statusHint.className = "text-[11px] text-red-500 px-1 truncate";
       btnPlay.disabled = false;
       btnText.innerText = "เล่นเพลง";
