@@ -29,12 +29,28 @@
       background: #27272a;
       border-radius: 4px;
     }
+    /* ซ่อน IFrame แต่คงขนาดเล็กไว้ให้เบราว์เซอร์ไม่ตัดการทำงาน */
+    #player-wrapper {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: 200px;
+      height: 200px;
+      opacity: 0.001;
+      pointer-events: none;
+      z-index: -999;
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between items-center p-4">
 
-  <!-- Native HTML5 Audio สำหรับเล่นเสียงเบื้องหลังขณะปิดหน้าจอ -->
-  <audio id="audio-engine" playsinline preload="auto"></audio>
+  <!-- เสียงเงียบแทรกเพื่อบังคับให้เบราว์เซอร์คงระบบเสียงพื้นหลังไว้ตอนปิดจอ -->
+  <audio id="silent-audio" loop playsinline preload="auto"></audio>
+
+  <!-- YouTube Official Player Element -->
+  <div id="player-wrapper">
+    <div id="yt-player"></div>
+  </div>
 
   <div class="w-full max-w-md flex flex-col gap-5 my-auto">
 
@@ -46,11 +62,12 @@
         </div>
         <div>
           <h1 class="text-lg font-black tracking-wider uppercase text-white">plam<span class="text-red-500">tube</span></h1>
-          <p class="text-[10px] text-zinc-500 font-medium">Direct Stream Engine &bull; Background Supported</p>
+          <p class="text-[10px] text-zinc-500 font-medium">Official Engine &bull; Background Supported</p>
         </div>
       </div>
-      <div class="text-[11px] px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center gap-1.5">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> พร้อมใช้งาน
+      <div id="status-badge" class="text-[11px] px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center gap-1.5">
+        <span id="status-dot" class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> 
+        <span id="status-badge-text">กำลังโหลดระบบ...</span>
       </div>
     </header>
 
@@ -71,7 +88,7 @@
           <span id="btn-text">เล่นเพลง</span>
         </button>
       </div>
-      <p id="status-hint" class="text-[11px] text-zinc-500 px-1 truncate">รองรับการปิดหน้าจอและพับหน้าจอบนมือถือ</p>
+      <p id="status-hint" class="text-[11px] text-zinc-500 px-1 truncate">รองรับทุกเพลงบน YouTube 100%</p>
     </div>
 
     <!-- Vinyl Player Display -->
@@ -152,12 +169,25 @@
     plamtube &bull; Red & Black Engine
   </footer>
 
+  <!-- โหลดสคริปต์ทางการของ YouTube -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
   <script>
-    const audio = document.getElementById('audio-engine');
+    let player = null;
+    let isReady = false;
+    let currentVideoId = null;
+    let currentTrack = null;
+    let timer = null;
+
+    // สร้างไฟล์เสียงเงียบ WAV Base64 สำหรับหลอกมือถือ
+    const silentAudio = document.getElementById('silent-audio');
+    silentAudio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+
     const urlInput = document.getElementById('url-input');
     const btnPlay = document.getElementById('btn-play');
-    const btnText = document.getElementById('btn-text');
     const statusHint = document.getElementById('status-hint');
+    const statusDot = document.getElementById('status-dot');
+    const statusBadgeText = document.getElementById('status-badge-text');
     const vinyl = document.getElementById('vinyl');
     const trackCover = document.getElementById('track-cover');
     const trackTitle = document.getElementById('track-title');
@@ -171,15 +201,32 @@
     const historyBadge = document.getElementById('history-badge');
     const btnClearHistory = document.getElementById('btn-clear-history');
 
-    let currentTrack = null;
-
-    // รายชื่อ Instance ของ Invidious สำหรับดึง Stream แท้
-    const INVIDIOUS_INSTANCES = [
-      'https://inv.tux.pizza',
-      'https://invidious.nerdvpn.de',
-      'https://vid.puffyan.us',
-      'https://invidious.projectsegfau.lt'
-    ];
+    window.onYouTubeIframeAPIReady = function() {
+      player = new YT.Player('yt-player', {
+        height: '200',
+        width: '200',
+        playerVars: {
+          'autoplay': 1,
+          'controls': 0,
+          'playsinline': 1,
+          'disablekb': 1,
+          'origin': window.location.origin
+        },
+        events: {
+          'onReady': () => {
+            isReady = true;
+            statusDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-500";
+            statusBadgeText.innerText = "พร้อมใช้งาน";
+            renderHistory();
+          },
+          'onStateChange': onStateChange,
+          'onError': () => {
+            statusHint.innerText = "ไม่สามารถเล่นวิดีโอนี้ได้ (อาจติดลิขสิทธิ์)";
+            statusHint.className = "text-[11px] text-red-500 px-1 truncate";
+          }
+        }
+      });
+    };
 
     function extractVideoId(url) {
       if (!url) return null;
@@ -197,102 +244,65 @@
       return `${m}:${sec < 10 ? '0' : ''}${sec}`;
     }
 
-    async function fetchAudioStream(videoId) {
-      for (const host of INVIDIOUS_INSTANCES) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 4000);
-
-          const res = await fetch(`${host}/api/v1/videos/${videoId}`, {
-            signal: controller.signal
-          });
-          clearTimeout(timeoutId);
-
-          if (!res.ok) continue;
-          const data = await res.json();
-
-          if (data && data.adaptiveFormats) {
-            const audioTracks = data.adaptiveFormats.filter(f => f.type && f.type.startsWith('audio/'));
-            if (audioTracks.length > 0) {
-              const selectedAudio = audioTracks.find(f => f.container === 'm4a') || audioTracks[0];
-              return {
-                audioUrl: selectedAudio.url,
-                title: data.title,
-                author: data.author,
-                cover: (data.videoThumbnails && data.videoThumbnails[0]) ? data.videoThumbnails[0].url : `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
-              };
-            }
-          }
-        } catch (e) {
-          console.warn(`Host ${host} failed, trying next...`);
-        }
+    function onStateChange(e) {
+      if (e.data === YT.PlayerState.PLAYING) {
+        vinyl.classList.remove('spin-paused');
+        toggleIcon.className = "fa-solid fa-pause";
+        statusHint.innerText = "กำลังเล่นเสียง • ปิดหน้าจอได้ทันที";
+        statusHint.className = "text-[11px] text-emerald-500 px-1 truncate";
+        silentAudio.play().catch(() => {});
+        startTimer();
+        setupMediaSession();
+      } else if (e.data === YT.PlayerState.PAUSED) {
+        vinyl.classList.add('spin-paused');
+        toggleIcon.className = "fa-solid fa-play ml-0.5";
+        silentAudio.pause();
+        clearInterval(timer);
+      } else if (e.data === YT.PlayerState.ENDED) {
+        vinyl.classList.add('spin-paused');
+        toggleIcon.className = "fa-solid fa-play ml-0.5";
+        silentAudio.pause();
+        clearInterval(timer);
       }
-      return null;
     }
 
     async function playSong(videoId) {
-      statusHint.innerText = "กำลังเชื่อมต่อสตรีมเสียง...";
-      statusHint.className = "text-[11px] text-amber-500 px-1 truncate";
-      btnPlay.disabled = true;
-      btnText.innerText = "โหลด...";
-
-      const streamData = await fetchAudioStream(videoId);
-
-      if (!streamData || !streamData.audioUrl) {
-        statusHint.innerText = "ไม่สามารถเชื่อมต่อเพลงนี้ได้ กรุณาลองใหม่อีกครั้ง";
-        statusHint.className = "text-[11px] text-red-500 px-1 truncate";
-        btnPlay.disabled = false;
-        btnText.innerText = "เล่นเพลง";
+      if (!isReady || !player) {
+        alert("กำลังโหลดระบบเครื่องเล่น กรุณารอสักครู่");
         return;
       }
+      currentVideoId = videoId;
+      statusHint.innerText = "กำลังโหลดเพลง...";
+      statusHint.className = "text-[11px] text-amber-500 px-1 truncate";
 
-      currentTrack = {
-        id: videoId,
-        title: streamData.title || `Track (${videoId})`,
-        author: streamData.author || "YouTube Artist",
-        cover: streamData.cover,
-        timestamp: Date.now()
-      };
+      player.loadVideoById(videoId);
+
+      try {
+        const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+        const data = await res.json();
+        currentTrack = {
+          id: videoId,
+          title: data.title || `Track (${videoId})`,
+          author: data.author_name || "YouTube Creator",
+          cover: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+          timestamp: Date.now()
+        };
+      } catch {
+        currentTrack = {
+          id: videoId,
+          title: `Track (${videoId})`,
+          author: "YouTube Creator",
+          cover: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+          timestamp: Date.now()
+        };
+      }
 
       trackTitle.innerText = currentTrack.title;
       trackAuthor.innerText = currentTrack.author;
       trackCover.src = currentTrack.cover;
 
-      audio.pause();
-      audio.src = streamData.audioUrl;
-      audio.load();
-
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          statusHint.innerText = "กำลังเล่นเสียง • ปิดหน้าจอได้ทันที";
-          statusHint.className = "text-[11px] text-emerald-500 px-1 truncate";
-          saveHistory(currentTrack);
-          setupMediaSession();
-        }).catch(() => {
-          statusHint.innerText = "กำลังเริ่มต้นเสียง...";
-        });
-      }
-
-      btnPlay.disabled = false;
-      btnText.innerText = "เล่นเพลง";
+      saveHistory(currentTrack);
     }
-
-    audio.onplaying = () => {
-      statusHint.innerText = "กำลังเล่นเสียง • ปิดหน้าจอได้ทันที";
-      statusHint.className = "text-[11px] text-emerald-500 px-1 truncate";
-      if (currentTrack) {
-        saveHistory(currentTrack);
-        setupMediaSession();
-      }
-    };
-
-    audio.onerror = () => {
-      statusHint.innerText = "สตรีมเสียงสะดุด กรุณากดเล่นอีกครั้ง";
-      statusHint.className = "text-[11px] text-red-500 px-1 truncate";
-      btnPlay.disabled = false;
-      btnText.innerText = "เล่นเพลง";
-    };
 
     btnPlay.addEventListener('click', () => {
       const id = extractVideoId(urlInput.value);
@@ -310,43 +320,42 @@
     });
 
     btnToggle.addEventListener('click', () => {
-      if (!audio.src) return;
-      if (audio.paused) {
-        audio.play();
+      if (!isReady || !currentVideoId) return;
+      const state = player.getPlayerState();
+      if (state === YT.PlayerState.PLAYING) {
+        player.pauseVideo();
       } else {
-        audio.pause();
+        player.playVideo();
       }
     });
 
-    audio.addEventListener('play', () => {
-      vinyl.classList.remove('spin-paused');
-      toggleIcon.className = "fa-solid fa-pause";
-    });
-
-    audio.addEventListener('pause', () => {
-      vinyl.classList.add('spin-paused');
-      toggleIcon.className = "fa-solid fa-play ml-0.5";
-    });
-
-    audio.addEventListener('timeupdate', () => {
-      if (!isNaN(audio.duration) && audio.duration > 0) {
-        seekBar.value = (audio.currentTime / audio.duration) * 100;
-        currentTimeElem.innerText = formatTime(audio.currentTime);
-        durationElem.innerText = formatTime(audio.duration);
-      }
-    });
+    function startTimer() {
+      clearInterval(timer);
+      timer = setInterval(() => {
+        if (isReady && player.getCurrentTime) {
+          const cur = player.getCurrentTime();
+          const dur = player.getDuration();
+          if (dur > 0) {
+            seekBar.value = (cur / dur) * 100;
+            currentTimeElem.innerText = formatTime(cur);
+            durationElem.innerText = formatTime(dur);
+          }
+        }
+      }, 500);
+    }
 
     seekBar.addEventListener('input', (e) => {
-      if (!isNaN(audio.duration)) {
-        audio.currentTime = (e.target.value / 100) * audio.duration;
+      if (isReady && player.getDuration) {
+        player.seekTo((e.target.value / 100) * player.getDuration(), true);
       }
     });
 
     document.getElementById('btn-backward').addEventListener('click', () => {
-      audio.currentTime = Math.max(0, audio.currentTime - 10);
+      if (isReady && currentVideoId) player.seekTo(Math.max(0, player.getCurrentTime() - 10), true);
     });
+
     document.getElementById('btn-forward').addEventListener('click', () => {
-      audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10);
+      if (isReady && currentVideoId) player.seekTo(player.getCurrentTime() + 10, true);
     });
 
     function setupMediaSession() {
@@ -357,13 +366,13 @@
           album: 'plamtube',
           artwork: [{ src: currentTrack.cover, sizes: '512x512', type: 'image/jpeg' }]
         });
-        navigator.mediaSession.setActionHandler('play', () => audio.play());
-        navigator.mediaSession.setActionHandler('pause', () => audio.pause());
+        navigator.mediaSession.setActionHandler('play', () => player.playVideo());
+        navigator.mediaSession.setActionHandler('pause', () => player.pauseVideo());
         navigator.mediaSession.setActionHandler('seekbackward', () => {
-          audio.currentTime = Math.max(0, audio.currentTime - 10);
+          player.seekTo(Math.max(0, player.getCurrentTime() - 10), true);
         });
         navigator.mediaSession.setActionHandler('seekforward', () => {
-          audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10);
+          player.seekTo(player.getCurrentTime() + 10, true);
         });
       }
     }
