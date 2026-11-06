@@ -33,7 +33,7 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between items-center p-4">
 
-  <!-- Native HTML5 Audio: ตัวการสำคัญที่ทำให้เล่นตอนปิดจอได้ 100% -->
+  <!-- Native HTML5 Audio สำหรับเล่นเสียงเบื้องหลังขณะปิดหน้าจอ -->
   <audio id="audio-engine" playsinline preload="auto"></audio>
 
   <div class="w-full max-w-md flex flex-col gap-5 my-auto">
@@ -189,7 +189,6 @@
       return `${m}:${sec < 10 ? '0' : ''}${sec}`;
     }
 
-    // ดึงข้อมูลเพลงผ่าน oEmbed
     async function fetchMetadata(videoId) {
       try {
         const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
@@ -205,6 +204,7 @@
 
     async function playSong(videoId) {
       statusHint.innerText = "กำลังเชื่อมต่อสตรีมเสียงจากเซิร์ฟเวอร์...";
+      statusHint.className = "text-[11px] text-amber-500 px-1 truncate";
       btnPlay.disabled = true;
       btnText.innerText = "โหลด...";
 
@@ -221,21 +221,44 @@
       trackAuthor.innerText = currentTrack.author;
       trackCover.src = currentTrack.cover;
 
-      // เชื่อมต่อไปที่ Backend Endpoint
+      audio.pause();
       audio.src = `/api/stream?id=${videoId}`;
+      audio.load();
 
-      audio.play().then(() => {
-        statusHint.innerText = "กำลังเล่นเสียง &bull; ปิดหน้าจอได้ทันที";
+      // สั่งเล่นทันทีตาม User Gesture
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          statusHint.innerText = "กำลังเล่นเสียง • ปิดหน้าจอได้ทันที";
+          statusHint.className = "text-[11px] text-emerald-500 px-1 truncate";
+          saveHistory(currentTrack);
+          setupMediaSession();
+        }).catch(() => {
+          // กรณีกำลังรอดาวน์โหลดก้อนข้อมูลแรก
+          statusHint.innerText = "กำลังบัฟเฟอร์เสียง กรุณารอสักครู่...";
+          statusHint.className = "text-[11px] text-zinc-400 px-1 truncate";
+        });
+      }
+
+      btnPlay.disabled = false;
+      btnText.innerText = "เล่นเพลง";
+    }
+
+    audio.onplaying = () => {
+      statusHint.innerText = "กำลังเล่นเสียง • ปิดหน้าจอได้ทันที";
+      statusHint.className = "text-[11px] text-emerald-500 px-1 truncate";
+      if (currentTrack) {
         saveHistory(currentTrack);
         setupMediaSession();
-      }).catch(err => {
-        statusHint.innerText = "เกิดข้อผิดพลาดในการเล่น";
-        alert("ไม่สามารถเล่นเพลงนี้ได้ ตรวจสอบว่าเซิร์ฟเวอร์ Node.js กำลังทำงานอยู่");
-      }).finally(() => {
-        btnPlay.disabled = false;
-        btnText.innerText = "เล่นเพลง";
-      });
-    }
+      }
+    };
+
+    audio.onerror = () => {
+      statusHint.innerText = "ขออภัย ไม่สามารถดึงสตรีมเสียงของเพลงนี้ได้ในขณะนี้";
+      statusHint.className = "text-[11px] text-red-500 px-1 truncate";
+      btnPlay.disabled = false;
+      btnText.innerText = "เล่นเพลง";
+    };
 
     btnPlay.addEventListener('click', () => {
       const id = extractVideoId(urlInput.value);
@@ -243,7 +266,8 @@
         playSong(id);
         urlInput.value = '';
       } else {
-        alert("กรุณาใส่ลิงก์ YouTube ให้ถูกต้อง");
+        statusHint.innerText = "กรุณาใส่ลิงก์ YouTube ให้ถูกต้อง";
+        statusHint.className = "text-[11px] text-red-400 px-1 truncate";
       }
     });
 
@@ -291,7 +315,6 @@
       audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10);
     });
 
-    // คอนโทรลเลอร์บนหน้าจอล็อก (MediaSession API)
     function setupMediaSession() {
       if ('mediaSession' in navigator && currentTrack) {
         navigator.mediaSession.metadata = new MediaMetadata({
@@ -311,7 +334,6 @@
       }
     }
 
-    // ประวัติการฟัง (LocalStorage)
     function getHistory() {
       return JSON.parse(localStorage.getItem('plamtube_history') || '[]');
     }
