@@ -32,13 +32,6 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.15);
     }
 
-    .liquid-glass-card {
-      background: rgba(18, 18, 22, 0.45);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
     .theme-accent-bg {
       background: var(--accent-gradient) !important;
     }
@@ -89,36 +82,40 @@
       background: var(--accent-color);
     }
 
-    /* ตำแหน่ง IFrame แบบสลับโหมด */
-    .video-mode-frame {
-      width: 100% !important;
-      height: 100% !important;
-      border-radius: 1rem;
-      opacity: 1 !important;
-      pointer-events: auto !important;
-      z-index: 20 !important;
+    /* จัดการ IFrame โดยไม่ย้าย DOM Node เพื่อไม่ให้คลิปรีเซ็ต */
+    #player-mount {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transition: all 0.25s ease-in-out;
     }
 
-    .audio-mode-frame {
-      position: fixed !important;
-      bottom: 0 !important;
-      right: 0 !important;
-      width: 180px !important;
-      height: 180px !important;
+    /* โหมดดูคลิป: แสดงผล 16:9 สวยงาม */
+    .view-video #player-mount {
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      z-index: 30;
+      border-radius: 1rem;
+    }
+
+    /* โหมดย่อ/ปิดจอ: ซ่อนหลังแผ่นเสียงโดยไม่ทำลาย Frame */
+    .view-audio #player-mount {
       opacity: 0.001 !important;
       pointer-events: none !important;
-      z-index: -999 !important;
+      z-index: -10;
     }
   </style>
 </head>
 <body class="flex flex-col justify-between p-3 sm:p-6 lg:p-8">
 
-  <!-- แท็กเสียงเงียบป้องกันเครื่องตัดการทำงานเบื้องหลัง -->
+  <!-- เสียงเงียบป้องกัน Background Sleep -->
   <audio id="silent-audio" loop playsinline preload="auto"></audio>
 
   <div class="w-full max-w-6xl mx-auto flex flex-col gap-4">
 
-    <!-- Top Navigation Bar: Liquid Glass Island -->
+    <!-- Top Navigation Bar -->
     <header class="liquid-glass rounded-2xl px-4 py-3 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div id="brand-badge" class="w-10 h-10 rounded-xl theme-accent-bg flex items-center justify-center text-white font-black text-xl shadow-lg border border-white/20">
@@ -129,14 +126,13 @@
             plam<span class="theme-accent-color">tube</span>
             <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/10 text-zinc-300 font-mono tracking-normal">PREMIUM</span>
           </h1>
-          <p class="text-[11px] text-zinc-400 font-medium">Liquid Glass Engine &bull; iOS Style</p>
+          <p class="text-[11px] text-zinc-400 font-medium">Seamless Switcher &bull; iOS Glass</p>
         </div>
       </div>
 
       <!-- Controls: Theme Color Picker & Timer -->
       <div class="flex items-center gap-2.5 sm:gap-4">
-        
-        <!-- จานสีเปลี่ยนธีม Liquid Theme Switcher -->
+        <!-- Palette Switcher -->
         <div class="flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded-full border border-white/10">
           <button class="color-dot w-4 h-4 rounded-full bg-red-500 border border-white/40 transition active:scale-90" data-color="#ef4444" data-gradient="linear-gradient(135deg, #ef4444 0%, #991b1b 100%)" data-bg="radial-gradient(circle at 50% 0%, #1c0a0d 0%, #08080a 55%, #020203 100%)"></button>
           <button class="color-dot w-4 h-4 rounded-full bg-purple-500 border border-transparent hover:border-white/40 transition active:scale-90" data-color="#a855f7" data-gradient="linear-gradient(135deg, #a855f7 0%, #581c87 100%)" data-bg="radial-gradient(circle at 50% 0%, #14081e 0%, #08080a 55%, #020203 100%)"></button>
@@ -159,10 +155,10 @@
       </div>
     </header>
 
-    <!-- Main Dynamic Grid -->
+    <!-- Main Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
 
-      <!-- Column 1: Liquid Player Container (Left) -->
+      <!-- Column 1: Player (Left) -->
       <div class="lg:col-span-7 flex flex-col gap-4 liquid-glass p-4 sm:p-6 rounded-3xl relative overflow-hidden">
         
         <!-- Search & URL Input -->
@@ -187,32 +183,31 @@
           <div id="search-results" class="hidden absolute top-14 left-0 right-0 bg-black/85 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-2 z-50 max-h-72 overflow-y-auto space-y-1.5"></div>
         </div>
 
-        <!-- Mode Switcher Sub-bar: สลับโหมดแผ่นเสียง / โหมดดูคลิปวิดีโอ -->
+        <!-- Mode Switcher Sub-bar -->
         <div class="flex items-center justify-between px-1">
           <div class="flex items-center gap-2">
-            <!-- ปุ่มสลับโหมด Video / Vinyl -->
-            <button id="btn-toggle-mode" class="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1 rounded-full text-xs text-zinc-300 transition active:scale-95">
+            <button id="btn-toggle-mode" class="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-full text-xs text-zinc-200 transition active:scale-95">
               <i id="mode-icon" class="fa-solid fa-film theme-accent-color"></i>
               <span id="mode-text">โหมดดูคลิป</span>
             </button>
-            <p id="status-hint" class="text-[11px] text-zinc-400 truncate hidden sm:block">พร้อมใช้งานทุกระบบ</p>
+            <p id="status-hint" class="text-[11px] text-zinc-400 truncate hidden sm:block">โหมดเสียง: พับจอหรือปิดหน้าจอได้ทันที</p>
           </div>
 
-          <button id="btn-mix-mode" class="text-[11px] text-zinc-300 hover:text-white flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1 rounded-full transition active:scale-95">
+          <button id="btn-mix-mode" class="text-[11px] text-zinc-300 hover:text-white flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-full transition active:scale-95">
             <i class="fa-solid fa-wand-magic-sparkles theme-accent-color"></i> เปิดมิกซ์เพลงนี้
           </button>
         </div>
 
-        <!-- Player Stage: แผ่นเสียง Vinyl VS กรอบคลิป Video 16:9 -->
-        <div class="w-full flex flex-col items-center justify-center py-2 relative min-h-[240px] sm:min-h-[290px]">
+        <!-- Player Stage Container (ควบคุมผ่านคลาส view-audio / view-video) -->
+        <div id="stage-box" class="view-audio w-full flex flex-col items-center justify-center relative min-h-[260px] sm:min-h-[300px]">
 
-          <!-- 1. กรอบแสดงวิดีโอคลิป (Video Stage) -->
-          <div id="video-stage" class="w-full aspect-video rounded-2xl overflow-hidden hidden shadow-2xl border border-white/10 relative">
-            <div id="video-wrapper" class="w-full h-full"></div>
+          <!-- IFrame YouTube ตัวจริง ฝังถาวรไว้ที่นี่ ไม่ถูก Destroy -->
+          <div id="player-mount" class="overflow-hidden bg-black flex items-center justify-center">
+            <div id="yt-player" class="w-full h-full"></div>
           </div>
 
-          <!-- 2. แผ่นเสียง Vinyl Stage (สำหรับโหมด Audio ปิดหน้าจอฟัง) -->
-          <div id="vinyl-stage" class="flex flex-col items-center justify-center">
+          <!-- แผ่นเสียง Vinyl Stage (จะแสดงเมื่ออยู่ใน view-audio) -->
+          <div id="vinyl-stage" class="flex flex-col items-center justify-center py-2 z-10 transition duration-300">
             <div id="vinyl" class="w-48 h-48 sm:w-56 sm:h-56 rounded-full bg-zinc-950 border-4 border-zinc-900 theme-accent-glow flex items-center justify-center relative spin spin-paused transition-all duration-500 shadow-2xl">
               <div class="absolute inset-0 rounded-full border border-white/10 m-2.5 pointer-events-none"></div>
               <div class="absolute inset-0 rounded-full border border-white/5 m-7 pointer-events-none"></div>
@@ -265,12 +260,12 @@
           </div>
         </div>
 
-        <!-- Controls & Volume Bar -->
+        <!-- Player Controls (จัด Balance แบบสมมาตร พร้อมปุ่ม Play/Pause แม่นยำ) -->
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-white/10 px-2">
           
-          <!-- Volume Slider -->
-          <div class="flex items-center gap-2.5 w-full sm:w-auto order-2 sm:order-1">
-            <button id="btn-mute" class="text-zinc-400 hover:text-white transition text-sm">
+          <!-- Volume Bar -->
+          <div class="flex items-center gap-2.5 w-full sm:w-auto order-2 sm:order-1 justify-center sm:justify-start">
+            <button id="btn-mute" class="w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 hover:text-white transition text-sm">
               <i id="volume-icon" class="fa-solid fa-volume-high"></i>
             </button>
             <input 
@@ -281,24 +276,33 @@
               value="100" 
               class="w-24 sm:w-28 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white"
             />
-            <span id="volume-text" class="text-[10px] text-zinc-400 font-mono w-6">100%</span>
+            <span id="volume-text" class="text-[10px] text-zinc-400 font-mono w-6 text-right">100%</span>
           </div>
 
-          <!-- Player Buttons -->
-          <div class="flex items-center justify-center gap-5 sm:gap-6 order-1 sm:order-2 w-full sm:w-auto">
-            <button id="btn-prev-track" title="เพลงก่อนหน้า" class="text-zinc-400 hover:text-white transition active:scale-90 text-base">
+          <!-- Buttons Group (Balanced 5 Buttons Layout) -->
+          <div class="flex items-center justify-center gap-3 sm:gap-4 order-1 sm:order-2 w-full sm:w-auto">
+            <!-- 1. ก่อนหน้า -->
+            <button id="btn-prev-track" title="เพลงก่อนหน้า" class="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center text-zinc-300 hover:text-white transition active:scale-90 text-sm">
               <i class="fa-solid fa-backward-step"></i>
             </button>
-            <button id="btn-backward" title="ย้อน 10 วินาที" class="text-zinc-400 hover:text-white transition active:scale-90 text-sm">
+            
+            <!-- 2. กอย้อน 10 วินาที -->
+            <button id="btn-backward" title="ย้อน 10 วินาที" class="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center text-zinc-300 hover:text-white transition active:scale-90 text-sm">
               <i class="fa-solid fa-rotate-left"></i>
             </button>
-            <button id="btn-toggle" class="w-14 h-14 theme-accent-bg text-white rounded-full flex items-center justify-center text-xl transition active:scale-95 shadow-xl border border-white/30">
+            
+            <!-- 3. หยุด/เล่น (ศูนย์กลางเด่นชัด) -->
+            <button id="btn-toggle" title="เล่น/หยุด" class="w-13 h-13 p-4 theme-accent-bg text-white rounded-full flex items-center justify-center text-xl transition active:scale-95 shadow-xl border border-white/30">
               <i id="toggle-icon" class="fa-solid fa-play ml-0.5"></i>
             </button>
-            <button id="btn-forward" title="ไปข้างหน้า 10 วินาที" class="text-zinc-400 hover:text-white transition active:scale-90 text-sm">
+            
+            <!-- 4. กอไปหน้า 10 วินาที -->
+            <button id="btn-forward" title="ไปข้างหน้า 10 วินาที" class="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center text-zinc-300 hover:text-white transition active:scale-90 text-sm">
               <i class="fa-solid fa-rotate-right"></i>
             </button>
-            <button id="btn-next-track" title="เพลงถัดไป" class="text-zinc-400 hover:text-white transition active:scale-90 text-base">
+            
+            <!-- 5. ถัดไป -->
+            <button id="btn-next-track" title="เพลงถัดไป" class="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center text-zinc-300 hover:text-white transition active:scale-90 text-sm">
               <i class="fa-solid fa-forward-step"></i>
             </button>
           </div>
@@ -307,7 +311,7 @@
 
       </div>
 
-      <!-- Column 2: Liquid Queue & History (Right) -->
+      <!-- Column 2: Queue & History (Right) -->
       <div class="lg:col-span-5 flex flex-col gap-3 liquid-glass p-4 sm:p-5 rounded-3xl min-h-[460px]">
         
         <!-- Tab Switcher -->
@@ -325,19 +329,11 @@
           </button>
         </div>
 
-        <!-- Container: Queue List -->
         <div id="queue-container" class="space-y-2 max-h-[380px] lg:max-h-[500px] overflow-y-auto pr-1"></div>
-
-        <!-- Container: History List -->
         <div id="history-container" class="space-y-2 max-h-[380px] lg:max-h-[500px] overflow-y-auto pr-1 hidden"></div>
 
       </div>
 
-    </div>
-
-    <!-- Hidden Default Container for Audio Mode IFrame -->
-    <div id="hidden-player-box" class="audio-mode-frame">
-      <div id="yt-player"></div>
     </div>
 
     <!-- Footer -->
@@ -359,7 +355,7 @@
     let sleepSecondsRemaining = 0;
     let currentVolume = 100;
     let isMuted = false;
-    let isVideoMode = false; // สถานะโหมดวิดีโอ
+    let isVideoMode = false;
 
     let songQueue = [];
     let currentTab = 'queue';
@@ -401,12 +397,10 @@
     const btnToggleMode = document.getElementById('btn-toggle-mode');
     const modeIcon = document.getElementById('mode-icon');
     const modeText = document.getElementById('mode-text');
-    const videoStage = document.getElementById('video-stage');
+    const stageBox = document.getElementById('stage-box');
     const vinylStage = document.getElementById('vinyl-stage');
-    const videoWrapper = document.getElementById('video-wrapper');
-    const hiddenPlayerBox = document.getElementById('hidden-player-box');
 
-    // 1. ระบบ Theme Color Switcher
+    // 1. Theme Color Switcher
     document.querySelectorAll('.color-dot').forEach(dot => {
       dot.addEventListener('click', () => {
         const color = dot.dataset.color;
@@ -424,33 +418,46 @@
       });
     });
 
-    // 2. ระบบสลับโหมดคลิปวิดีโอ (Video Mode) / แผ่นเสียง (Audio Mode)
+    // 2. สลับโหมดแบบไม่แตะต้อง DOM Node เพลงเล่นต่อเวลาเดิมทันที
     btnToggleMode.addEventListener('click', () => {
       isVideoMode = !isVideoMode;
-      const ytIframe = document.getElementById('yt-player');
 
       if (isVideoMode) {
-        // ย้าย IFrame มาไว้ในกรอบวิดีโอ
-        videoStage.classList.remove('hidden');
-        vinylStage.classList.add('hidden');
-        videoWrapper.appendChild(ytIframe);
-        ytIframe.className = "video-mode-frame";
+        stageBox.classList.remove('view-audio');
+        stageBox.classList.add('view-video');
+        vinylStage.classList.add('opacity-0', 'pointer-events-none');
 
         modeIcon.className = "fa-solid fa-compact-disc theme-accent-color";
         modeText.innerText = "โหมดแผ่นเสียง (ปิดจอ)";
         statusHint.innerText = "กำลังรับชมแบบวิดีโอคลิป";
       } else {
-        // ย้าย IFrame กลับไปซ่อนในกล่องพื้นหลัง
-        videoStage.classList.add('hidden');
-        vinylStage.classList.remove('hidden');
-        hiddenPlayerBox.appendChild(ytIframe);
-        ytIframe.className = "audio-mode-frame";
+        stageBox.classList.remove('view-video');
+        stageBox.classList.add('view-audio');
+        vinylStage.classList.remove('opacity-0', 'pointer-events-none');
 
         modeIcon.className = "fa-solid fa-film theme-accent-color";
         modeText.innerText = "โหมดดูคลิป";
         statusHint.innerText = "โหมดเสียง: พับจอหรือปิดหน้าจอได้ทันที";
       }
+
+      // ตรวจสอบและซิงค์ไอคอน Play/Pause ให้ตรงกับสถานะจริงเสมอ
+      syncPlayIcon();
     });
+
+    function syncPlayIcon() {
+      if (player && player.getPlayerState) {
+        const state = player.getPlayerState();
+        if (state === YT.PlayerState.PLAYING) {
+          toggleIcon.className = "fa-solid fa-pause";
+          vinyl.classList.remove('spin-paused');
+          visualizerBars.forEach(b => b.classList.remove('bar-paused'));
+        } else {
+          toggleIcon.className = "fa-solid fa-play ml-0.5";
+          vinyl.classList.add('spin-paused');
+          visualizerBars.forEach(b => b.classList.add('bar-paused'));
+        }
+      }
+    }
 
     // 3. YouTube API Initial
     function initYouTube() {
@@ -558,7 +565,7 @@
       }, 1000);
     }
 
-    // ระบบ Volume Slider & Mute
+    // Volume & Mute
     volumeBar.addEventListener('input', (e) => {
       const val = parseInt(e.target.value);
       currentVolume = val;
@@ -595,7 +602,7 @@
       }
     });
 
-    // ค้นหาเพลงผ่าน JSONP
+    // Search JSONP
     window.handleSuggestions = function(data) {
       const suggestions = (data && data[1]) ? data[1] : [];
       if (suggestions.length === 0) {
@@ -744,7 +751,6 @@
       saveHistory(currentTrack);
     }
 
-    // จัดการคิวเพลง
     function enqueueTrack(item) {
       songQueue.push(item);
       renderQueue();
@@ -809,7 +815,6 @@
       });
     }
 
-    // ประวัติการฟัง
     function getHistory() {
       return JSON.parse(localStorage.getItem('plamtube_history') || '[]');
     }
@@ -896,7 +901,6 @@
       return `${Math.floor(diff / 86400)} วันที่แล้ว`;
     }
 
-    // สลับแท็บ
     tabQueueBtn.addEventListener('click', () => {
       currentTab = 'queue';
       tabQueueBtn.className = "text-xs font-bold uppercase tracking-wider text-white border-b-2 theme-accent-border pb-1.5 flex items-center gap-1.5 transition";
@@ -947,6 +951,7 @@
           timerCountdown.innerText = "หยุดแล้ว";
           timerSelect.value = "0";
           statusHint.innerText = "ตัวจับเวลาทำงาน: หยุดเล่นแล้ว";
+          syncPlayIcon();
         }
       }, 1000);
     });
@@ -957,7 +962,6 @@
       timerCountdown.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
     }
 
-    // ปุ่มมิกซ์วิทยุ
     btnMixMode.addEventListener('click', () => {
       if (!currentVideoId) {
         alert("กรุณาเลือกเล่นเพลงก่อนเพื่อเปิดมิกซ์");
@@ -989,13 +993,16 @@
       if (e.key === 'Enter') btnPlay.click();
     });
 
+    // ปุ่ม Play / Pause กดแล้วเปลี่ยนไอคอนทันที ไม่ค้าง
     btnToggle.addEventListener('click', () => {
       if (!isReady || !player) return;
       const state = player.getPlayerState();
       if (state === YT.PlayerState.PLAYING) {
         player.pauseVideo();
+        toggleIcon.className = "fa-solid fa-play ml-0.5";
       } else {
         player.playVideo();
+        toggleIcon.className = "fa-solid fa-pause";
       }
     });
 
@@ -1044,8 +1051,14 @@
           album: 'plamtube Premium',
           artwork: [{ src: currentTrack.cover, sizes: '512x512', type: 'image/jpeg' }]
         });
-        navigator.mediaSession.setActionHandler('play', () => player.playVideo());
-        navigator.mediaSession.setActionHandler('pause', () => player.pauseVideo());
+        navigator.mediaSession.setActionHandler('play', () => {
+          player.playVideo();
+          toggleIcon.className = "fa-solid fa-pause";
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+          player.pauseVideo();
+          toggleIcon.className = "fa-solid fa-play ml-0.5";
+        });
         navigator.mediaSession.setActionHandler('nexttrack', () => playNextInQueue());
         navigator.mediaSession.setActionHandler('previoustrack', () => {
           if (player.previousVideo) player.previousVideo();
