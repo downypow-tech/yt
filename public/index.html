@@ -3,17 +3,58 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>plamtube - Premium Audio Engine</title>
+  <title>plamtube premium</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    :root {
+      --accent-color: #ef4444;
+      --accent-glow: rgba(239, 68, 68, 0.45);
+      --accent-border: rgba(239, 68, 68, 0.35);
+      --accent-gradient: linear-gradient(135deg, #ef4444 0%, #991b1b 100%);
+    }
+
     body {
-      background: radial-gradient(circle at 50% 20%, #150507 0%, #050505 80%);
+      background: radial-gradient(circle at 50% 0%, #1c0a0d 0%, #08080a 55%, #020203 100%);
       color: #f4f4f5;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
     }
+
+    /* สไตล์ Liquid Glass สไตล์ iOS */
+    .liquid-glass {
+      background: rgba(255, 255, 255, 0.035);
+      backdrop-filter: blur(28px) saturate(190%);
+      -webkit-backdrop-filter: blur(28px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+    }
+
+    .liquid-glass-card {
+      background: rgba(18, 18, 22, 0.45);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .theme-accent-bg {
+      background: var(--accent-gradient) !important;
+    }
+
+    .theme-accent-color {
+      color: var(--accent-color) !important;
+    }
+
+    .theme-accent-border {
+      border-color: var(--accent-border) !important;
+    }
+
+    .theme-accent-glow {
+      box-shadow: 0 0 35px -5px var(--accent-glow) !important;
+    }
+
     .spin {
       animation: spin 14s linear infinite;
     }
@@ -23,172 +64,191 @@
     @keyframes spin {
       100% { transform: rotate(360deg); }
     }
-    .glow-red {
-      box-shadow: 0 0 35px -5px rgba(220, 38, 38, 0.45);
-    }
-    .glow-soft {
-      box-shadow: 0 0 20px -3px rgba(239, 68, 68, 0.25);
-    }
-    /* Visualizer Bar Wave Animation */
+
+    /* Equalizer Wave Animation */
     .bar-anim {
-      animation: barPulse 1.2s ease-in-out infinite alternate;
+      animation: barPulse 1.1s ease-in-out infinite alternate;
     }
     @keyframes barPulse {
       0% { height: 4px; }
-      100% { height: 22px; }
+      100% { height: 20px; }
     }
     .bar-paused {
       animation-play-state: paused;
       height: 4px !important;
     }
+
     ::-webkit-scrollbar {
-      width: 5px;
+      width: 4px;
     }
     ::-webkit-scrollbar-thumb {
-      background: #27272a;
-      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 99px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #dc2626;
+      background: var(--accent-color);
     }
-    #player-wrapper {
-      position: fixed;
-      bottom: 0;
-      right: 0;
-      width: 200px;
-      height: 200px;
-      opacity: 0.001;
-      pointer-events: none;
-      z-index: -999;
+
+    /* ตำแหน่ง IFrame แบบสลับโหมด */
+    .video-mode-frame {
+      width: 100% !important;
+      height: 100% !important;
+      border-radius: 1rem;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      z-index: 20 !important;
+    }
+
+    .audio-mode-frame {
+      position: fixed !important;
+      bottom: 0 !important;
+      right: 0 !important;
+      width: 180px !important;
+      height: 180px !important;
+      opacity: 0.001 !important;
+      pointer-events: none !important;
+      z-index: -999 !important;
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between p-3 sm:p-6 lg:p-8">
+<body class="flex flex-col justify-between p-3 sm:p-6 lg:p-8">
 
-  <!-- แท็กเสียงเงียบป้องกันการตัดการทำงานเบื้องหลัง -->
+  <!-- แท็กเสียงเงียบป้องกันเครื่องตัดการทำงานเบื้องหลัง -->
   <audio id="silent-audio" loop playsinline preload="auto"></audio>
-
-  <!-- YouTube Official Player IFrame -->
-  <div id="player-wrapper">
-    <div id="yt-player"></div>
-  </div>
 
   <div class="w-full max-w-6xl mx-auto flex flex-col gap-4">
 
-    <!-- Top Navigation Bar -->
-    <header class="flex items-center justify-between border-b border-zinc-900/80 pb-3 backdrop-blur-md">
+    <!-- Top Navigation Bar: Liquid Glass Island -->
+    <header class="liquid-glass rounded-2xl px-4 py-3 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-800 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-red-600/40 border border-red-500/30">
+        <div id="brand-badge" class="w-10 h-10 rounded-xl theme-accent-bg flex items-center justify-center text-white font-black text-xl shadow-lg border border-white/20">
           P
         </div>
         <div>
-          <h1 class="text-xl font-black tracking-wider uppercase text-white flex items-center gap-1">
-            plam<span class="text-red-500">tube</span>
-            <span class="text-[9px] px-1.5 py-0.5 rounded bg-red-950/80 border border-red-800/40 text-red-400 font-mono tracking-normal">ULTRA</span>
+          <h1 class="text-lg sm:text-xl font-black tracking-wider uppercase text-white flex items-center gap-1.5">
+            plam<span class="theme-accent-color">tube</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/10 text-zinc-300 font-mono tracking-normal">PREMIUM</span>
           </h1>
-          <p class="text-[11px] text-zinc-500 font-medium">Smart Music Engine &bull; Responsive Design</p>
+          <p class="text-[11px] text-zinc-400 font-medium">Liquid Glass Engine &bull; iOS Style</p>
         </div>
       </div>
 
-      <div class="flex items-center gap-3">
-        <!-- Sleep Timer Selector -->
-        <div class="flex items-center gap-1.5 bg-zinc-950/80 border border-zinc-800 px-2.5 py-1 rounded-full text-zinc-400 text-xs shadow-inner">
-          <i class="fa-solid fa-moon text-amber-500 text-[11px]"></i>
-          <select id="timer-select" class="bg-transparent text-zinc-300 text-[11px] focus:outline-none cursor-pointer">
-            <option value="0" class="bg-zinc-950">เล่นไปเรื่อยๆ</option>
-            <option value="15" class="bg-zinc-950">หยุดใน 15 นาที</option>
-            <option value="30" class="bg-zinc-950">หยุดใน 30 นาที</option>
-            <option value="45" class="bg-zinc-950">หยุดใน 45 นาที</option>
-            <option value="60" class="bg-zinc-950">หยุดใน 60 นาที</option>
-          </select>
-          <span id="timer-countdown" class="text-amber-500 text-[10px] hidden font-mono font-semibold"></span>
+      <!-- Controls: Theme Color Picker & Timer -->
+      <div class="flex items-center gap-2.5 sm:gap-4">
+        
+        <!-- จานสีเปลี่ยนธีม Liquid Theme Switcher -->
+        <div class="flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded-full border border-white/10">
+          <button class="color-dot w-4 h-4 rounded-full bg-red-500 border border-white/40 transition active:scale-90" data-color="#ef4444" data-gradient="linear-gradient(135deg, #ef4444 0%, #991b1b 100%)" data-bg="radial-gradient(circle at 50% 0%, #1c0a0d 0%, #08080a 55%, #020203 100%)"></button>
+          <button class="color-dot w-4 h-4 rounded-full bg-purple-500 border border-transparent hover:border-white/40 transition active:scale-90" data-color="#a855f7" data-gradient="linear-gradient(135deg, #a855f7 0%, #581c87 100%)" data-bg="radial-gradient(circle at 50% 0%, #14081e 0%, #08080a 55%, #020203 100%)"></button>
+          <button class="color-dot w-4 h-4 rounded-full bg-cyan-400 border border-transparent hover:border-white/40 transition active:scale-90" data-color="#22d3ee" data-gradient="linear-gradient(135deg, #22d3ee 0%, #0e7490 100%)" data-bg="radial-gradient(circle at 50% 0%, #061820 0%, #08080a 55%, #020203 100%)"></button>
+          <button class="color-dot w-4 h-4 rounded-full bg-emerald-500 border border-transparent hover:border-white/40 transition active:scale-90" data-color="#10b981" data-gradient="linear-gradient(135deg, #10b981 0%, #065f46 100%)" data-bg="radial-gradient(circle at 50% 0%, #061911 0%, #08080a 55%, #020203 100%)"></button>
         </div>
 
-        <!-- Status Badge -->
-        <div id="status-badge" class="hidden sm:flex text-[11px] px-3 py-1 rounded-full bg-zinc-950 border border-zinc-800 text-zinc-400 items-center gap-2">
-          <span id="status-dot" class="w-2 h-2 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50"></span> 
-          <span id="status-badge-text">กำลังเตรียมระบบ...</span>
+        <!-- Sleep Timer -->
+        <div class="flex items-center gap-1.5 bg-black/40 border border-white/10 px-2.5 py-1 rounded-full text-zinc-300 text-xs">
+          <i class="fa-solid fa-moon text-amber-400 text-[11px]"></i>
+          <select id="timer-select" class="bg-transparent text-zinc-200 text-[11px] focus:outline-none cursor-pointer">
+            <option value="0" class="bg-zinc-950">เล่นเรื่อยๆ</option>
+            <option value="15" class="bg-zinc-950">15 นาที</option>
+            <option value="30" class="bg-zinc-950">30 นาที</option>
+            <option value="45" class="bg-zinc-950">45 นาที</option>
+            <option value="60" class="bg-zinc-950">60 นาที</option>
+          </select>
+          <span id="timer-countdown" class="text-amber-400 text-[10px] hidden font-mono font-semibold"></span>
         </div>
       </div>
     </header>
 
-    <!-- Main Grid: แบ่ง 2 คอลัมน์บนจอ iPad/Desktop และ 1 คอลัมน์บนมือถือ -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start mt-1">
+    <!-- Main Dynamic Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
 
-      <!-- Column 1 (Left / Player Section) -->
-      <div class="lg:col-span-7 flex flex-col gap-4 bg-zinc-950/40 border border-zinc-900/60 p-4 sm:p-6 rounded-2xl backdrop-blur-xl glow-soft">
+      <!-- Column 1: Liquid Player Container (Left) -->
+      <div class="lg:col-span-7 flex flex-col gap-4 liquid-glass p-4 sm:p-6 rounded-3xl relative overflow-hidden">
         
-        <!-- Search Input Bar -->
+        <!-- Search & URL Input -->
         <div class="relative">
           <div class="relative flex items-center">
             <input 
               type="text" 
               id="url-input" 
-              placeholder="พิมพ์ชื่อเพลง ศิลปิน หรือ วางลิงก์ YouTube / Mix..." 
-              class="w-full bg-zinc-900/90 border border-zinc-800 text-zinc-100 placeholder-zinc-500 rounded-xl pl-11 pr-28 py-3 text-sm focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition shadow-inner"
+              placeholder="ค้นหาชื่อเพลง ศิลปิน หรือ วางลิงก์ YouTube / Mix..." 
+              class="w-full bg-black/40 border border-white/10 text-zinc-100 placeholder-zinc-500 rounded-2xl pl-11 pr-28 py-3 text-sm focus:outline-none focus:border-white/30 transition shadow-inner"
             />
-            <i class="fa-solid fa-magnifying-glass absolute left-4 text-zinc-500 text-sm"></i>
+            <i class="fa-solid fa-magnifying-glass absolute left-4 text-zinc-400 text-sm"></i>
             <button 
               id="btn-play" 
-              class="absolute right-1.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-semibold text-xs px-4 py-2 rounded-lg transition active:scale-95 shadow-md flex items-center gap-1.5"
+              class="absolute right-1.5 theme-accent-bg text-white font-semibold text-xs px-4 py-2 rounded-xl transition active:scale-95 shadow-md flex items-center gap-1.5 border border-white/20"
             >
               <span id="btn-text">เล่นทันที</span>
             </button>
           </div>
 
           <!-- Dropdown ผลการค้นหา -->
-          <div id="search-results" class="hidden absolute top-14 left-0 right-0 bg-zinc-950/95 backdrop-blur-xl border border-zinc-800 rounded-xl shadow-2xl p-2 z-50 max-h-72 overflow-y-auto space-y-1.5"></div>
+          <div id="search-results" class="hidden absolute top-14 left-0 right-0 bg-black/85 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-2 z-50 max-h-72 overflow-y-auto space-y-1.5"></div>
         </div>
 
-        <!-- Sub status hint -->
+        <!-- Mode Switcher Sub-bar: สลับโหมดแผ่นเสียง / โหมดดูคลิปวิดีโอ -->
         <div class="flex items-center justify-between px-1">
-          <p id="status-hint" class="text-xs text-zinc-500 truncate flex items-center gap-1.5">
-            <i class="fa-solid fa-shield-heart text-red-500/80"></i> รองรับการปิดหน้าจอและพับหน้าจอ
-          </p>
-          <button id="btn-mix-mode" class="text-[11px] text-zinc-400 hover:text-red-400 flex items-center gap-1.5 bg-zinc-900/70 hover:bg-zinc-900 border border-zinc-800 px-2.5 py-1 rounded-lg transition active:scale-95">
-            <i class="fa-solid fa-wand-magic-sparkles text-red-500"></i> เปิดมิกซ์เพลงนี้
+          <div class="flex items-center gap-2">
+            <!-- ปุ่มสลับโหมด Video / Vinyl -->
+            <button id="btn-toggle-mode" class="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1 rounded-full text-xs text-zinc-300 transition active:scale-95">
+              <i id="mode-icon" class="fa-solid fa-film theme-accent-color"></i>
+              <span id="mode-text">โหมดดูคลิป</span>
+            </button>
+            <p id="status-hint" class="text-[11px] text-zinc-400 truncate hidden sm:block">พร้อมใช้งานทุกระบบ</p>
+          </div>
+
+          <button id="btn-mix-mode" class="text-[11px] text-zinc-300 hover:text-white flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1 rounded-full transition active:scale-95">
+            <i class="fa-solid fa-wand-magic-sparkles theme-accent-color"></i> เปิดมิกซ์เพลงนี้
           </button>
         </div>
 
-        <!-- Vinyl Player Display with Audio Wave Bars -->
-        <div class="flex flex-col items-center justify-center py-4 relative">
-          
-          <!-- Vinyl Disc -->
-          <div id="vinyl" class="w-52 h-52 sm:w-60 sm:h-60 rounded-full bg-zinc-950 border-4 border-zinc-900 glow-red flex items-center justify-center relative spin spin-paused transition-all duration-500">
-            <div class="absolute inset-0 rounded-full border border-zinc-800/40 m-2.5 pointer-events-none"></div>
-            <div class="absolute inset-0 rounded-full border border-zinc-800/30 m-7 pointer-events-none"></div>
-            <div class="absolute inset-0 rounded-full border border-zinc-800/20 m-12 pointer-events-none"></div>
-            
-            <img 
-              id="track-cover" 
-              src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80" 
-              alt="Cover" 
-              class="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border-2 border-zinc-900 shadow-inner z-10"
-            />
-            <div class="w-7 h-7 bg-zinc-950 rounded-full border-2 border-zinc-800 z-20 absolute flex items-center justify-center">
-              <div class="w-2 h-2 rounded-full bg-red-600 shadow-sm shadow-red-500"></div>
+        <!-- Player Stage: แผ่นเสียง Vinyl VS กรอบคลิป Video 16:9 -->
+        <div class="w-full flex flex-col items-center justify-center py-2 relative min-h-[240px] sm:min-h-[290px]">
+
+          <!-- 1. กรอบแสดงวิดีโอคลิป (Video Stage) -->
+          <div id="video-stage" class="w-full aspect-video rounded-2xl overflow-hidden hidden shadow-2xl border border-white/10 relative">
+            <div id="video-wrapper" class="w-full h-full"></div>
+          </div>
+
+          <!-- 2. แผ่นเสียง Vinyl Stage (สำหรับโหมด Audio ปิดหน้าจอฟัง) -->
+          <div id="vinyl-stage" class="flex flex-col items-center justify-center">
+            <div id="vinyl" class="w-48 h-48 sm:w-56 sm:h-56 rounded-full bg-zinc-950 border-4 border-zinc-900 theme-accent-glow flex items-center justify-center relative spin spin-paused transition-all duration-500 shadow-2xl">
+              <div class="absolute inset-0 rounded-full border border-white/10 m-2.5 pointer-events-none"></div>
+              <div class="absolute inset-0 rounded-full border border-white/5 m-7 pointer-events-none"></div>
+              <div class="absolute inset-0 rounded-full border border-white/5 m-12 pointer-events-none"></div>
+              
+              <img 
+                id="track-cover" 
+                src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80" 
+                alt="Cover" 
+                class="w-22 h-22 sm:w-26 sm:h-26 rounded-full object-cover border-2 border-zinc-900 shadow-inner z-10"
+              />
+              <div class="w-7 h-7 bg-zinc-950 rounded-full border-2 border-zinc-800 z-20 absolute flex items-center justify-center">
+                <div class="w-2 h-2 rounded-full theme-accent-bg shadow-sm"></div>
+              </div>
+            </div>
+
+            <!-- Wave Equalizer Bars -->
+            <div class="flex items-end justify-center gap-1 h-6 mt-4" id="visualizer-container">
+              <div class="w-1 theme-accent-bg rounded-full bar-anim bar-paused" style="animation-delay: 0.1s;"></div>
+              <div class="w-1 bg-white/70 rounded-full bar-anim bar-paused" style="animation-delay: 0.3s;"></div>
+              <div class="w-1 theme-accent-bg rounded-full bar-anim bar-paused" style="animation-delay: 0.5s;"></div>
+              <div class="w-1 bg-white/50 rounded-full bar-anim bar-paused" style="animation-delay: 0.2s;"></div>
+              <div class="w-1 theme-accent-bg rounded-full bar-anim bar-paused" style="animation-delay: 0.4s;"></div>
+              <div class="w-1 bg-white/80 rounded-full bar-anim bar-paused" style="animation-delay: 0.6s;"></div>
             </div>
           </div>
 
-          <!-- Futuristic Audio Equalizer Waveform Bars -->
-          <div class="flex items-end justify-center gap-1 h-7 mt-5" id="visualizer-container">
-            <div class="w-1 bg-red-600 rounded-full bar-anim bar-paused" style="animation-delay: 0.1s;"></div>
-            <div class="w-1 bg-red-500 rounded-full bar-anim bar-paused" style="animation-delay: 0.4s;"></div>
-            <div class="w-1 bg-zinc-400 rounded-full bar-anim bar-paused" style="animation-delay: 0.2s;"></div>
-            <div class="w-1 bg-red-600 rounded-full bar-anim bar-paused" style="animation-delay: 0.6s;"></div>
-            <div class="w-1 bg-zinc-300 rounded-full bar-anim bar-paused" style="animation-delay: 0.3s;"></div>
-            <div class="w-1 bg-red-500 rounded-full bar-anim bar-paused" style="animation-delay: 0.5s;"></div>
-            <div class="w-1 bg-red-600 rounded-full bar-anim bar-paused" style="animation-delay: 0.2s;"></div>
-          </div>
         </div>
 
-        <!-- Track Title & Artist -->
+        <!-- Track Info -->
         <div class="text-center px-4">
-          <h2 id="track-title" class="text-base sm:text-lg font-bold text-zinc-100 truncate tracking-wide">ยังไม่มีเพลงที่เล่น</h2>
+          <h2 id="track-title" class="text-base sm:text-lg font-bold text-white truncate tracking-wide">ยังไม่มีเพลงที่เล่น</h2>
           <p id="track-author" class="text-xs text-zinc-400 mt-0.5 truncate">พิมพ์ค้นหาหรือวางลิงก์เพื่อเริ่มเล่น</p>
         </div>
 
-        <!-- Progress / Seekbar -->
+        <!-- Progress Seekbar -->
         <div class="flex flex-col gap-1.5 px-2">
           <input 
             type="range" 
@@ -197,20 +257,20 @@
             min="0" 
             max="100" 
             step="0.1" 
-            class="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-red-600 transition"
+            class="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white transition"
           />
-          <div class="flex justify-between text-xs text-zinc-500 font-mono">
+          <div class="flex justify-between text-xs text-zinc-400 font-mono">
             <span id="current-time">0:00</span>
             <span id="duration-time">0:00</span>
           </div>
         </div>
 
-        <!-- Player Controls & Volume Slider Grid -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-zinc-900/80 px-2">
+        <!-- Controls & Volume Bar -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-white/10 px-2">
           
-          <!-- Volume Bar (ปรับเสียงดัง-เบา) -->
+          <!-- Volume Slider -->
           <div class="flex items-center gap-2.5 w-full sm:w-auto order-2 sm:order-1">
-            <button id="btn-mute" class="text-zinc-400 hover:text-red-500 transition text-sm">
+            <button id="btn-mute" class="text-zinc-400 hover:text-white transition text-sm">
               <i id="volume-icon" class="fa-solid fa-volume-high"></i>
             </button>
             <input 
@@ -219,12 +279,12 @@
               min="0" 
               max="100" 
               value="100" 
-              class="w-24 sm:w-28 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-red-600"
+              class="w-24 sm:w-28 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white"
             />
-            <span id="volume-text" class="text-[10px] text-zinc-500 font-mono w-6">100%</span>
+            <span id="volume-text" class="text-[10px] text-zinc-400 font-mono w-6">100%</span>
           </div>
 
-          <!-- Buttons Play / Pause / Skip -->
+          <!-- Player Buttons -->
           <div class="flex items-center justify-center gap-5 sm:gap-6 order-1 sm:order-2 w-full sm:w-auto">
             <button id="btn-prev-track" title="เพลงก่อนหน้า" class="text-zinc-400 hover:text-white transition active:scale-90 text-base">
               <i class="fa-solid fa-backward-step"></i>
@@ -232,7 +292,7 @@
             <button id="btn-backward" title="ย้อน 10 วินาที" class="text-zinc-400 hover:text-white transition active:scale-90 text-sm">
               <i class="fa-solid fa-rotate-left"></i>
             </button>
-            <button id="btn-toggle" class="w-14 h-14 bg-gradient-to-tr from-red-600 to-red-500 hover:from-red-500 hover:to-red-600 text-white rounded-full flex items-center justify-center text-xl transition active:scale-95 shadow-xl shadow-red-600/40 border border-red-400/20">
+            <button id="btn-toggle" class="w-14 h-14 theme-accent-bg text-white rounded-full flex items-center justify-center text-xl transition active:scale-95 shadow-xl border border-white/30">
               <i id="toggle-icon" class="fa-solid fa-play ml-0.5"></i>
             </button>
             <button id="btn-forward" title="ไปข้างหน้า 10 วินาที" class="text-zinc-400 hover:text-white transition active:scale-90 text-sm">
@@ -247,37 +307,42 @@
 
       </div>
 
-      <!-- Column 2 (Right / Queue & History Section) -->
-      <div class="lg:col-span-5 flex flex-col gap-3 bg-zinc-950/40 border border-zinc-900/60 p-4 sm:p-5 rounded-2xl backdrop-blur-xl glow-soft min-h-[460px]">
+      <!-- Column 2: Liquid Queue & History (Right) -->
+      <div class="lg:col-span-5 flex flex-col gap-3 liquid-glass p-4 sm:p-5 rounded-3xl min-h-[460px]">
         
-        <!-- Tab Selector: Queue vs History -->
-        <div class="flex items-center justify-between border-b border-zinc-900 pb-2">
+        <!-- Tab Switcher -->
+        <div class="flex items-center justify-between border-b border-white/10 pb-2">
           <div class="flex gap-4">
-            <button id="tab-queue-btn" class="text-xs font-bold uppercase tracking-wider text-red-500 border-b-2 border-red-500 pb-1.5 flex items-center gap-1.5 transition">
+            <button id="tab-queue-btn" class="text-xs font-bold uppercase tracking-wider text-white border-b-2 theme-accent-border pb-1.5 flex items-center gap-1.5 transition">
               <i class="fa-solid fa-list-ol"></i> คิวเพลง (<span id="queue-badge">0</span>)
             </button>
             <button id="tab-history-btn" class="text-xs font-bold uppercase tracking-wider text-zinc-500 pb-1.5 flex items-center gap-1.5 transition">
               <i class="fa-solid fa-clock-rotate-left"></i> ประวัติ (<span id="history-badge">0</span>)
             </button>
           </div>
-          <button id="btn-clear-tab" class="text-[11px] text-zinc-500 hover:text-red-400 transition flex items-center gap-1">
+          <button id="btn-clear-tab" class="text-[11px] text-zinc-400 hover:text-white transition flex items-center gap-1">
             <i class="fa-solid fa-trash-can text-[10px]"></i> ล้างแท็บนี้
           </button>
         </div>
 
-        <!-- Tab 1: Queue Container -->
+        <!-- Container: Queue List -->
         <div id="queue-container" class="space-y-2 max-h-[380px] lg:max-h-[500px] overflow-y-auto pr-1"></div>
 
-        <!-- Tab 2: History Container (มีปุ่ม +คิว ให้เลือกเพลงกลับมาฟังได้) -->
+        <!-- Container: History List -->
         <div id="history-container" class="space-y-2 max-h-[380px] lg:max-h-[500px] overflow-y-auto pr-1 hidden"></div>
 
       </div>
 
     </div>
 
+    <!-- Hidden Default Container for Audio Mode IFrame -->
+    <div id="hidden-player-box" class="audio-mode-frame">
+      <div id="yt-player"></div>
+    </div>
+
     <!-- Footer -->
-    <footer class="text-[11px] text-zinc-600 text-center py-3 border-t border-zinc-900/40 mt-2">
-      plamtube &bull; Red &amp; Black Audio Engine &bull; Background Lock Play Ready
+    <footer class="text-[11px] text-zinc-500 text-center py-2">
+      plamtube premium &bull; iOS Liquid Glass Style &bull; Background Lock Play Ready
     </footer>
 
   </div>
@@ -294,8 +359,8 @@
     let sleepSecondsRemaining = 0;
     let currentVolume = 100;
     let isMuted = false;
+    let isVideoMode = false; // สถานะโหมดวิดีโอ
 
-    // รายการคิวเพลง
     let songQueue = [];
     let currentTab = 'queue';
 
@@ -306,8 +371,6 @@
     const btnPlay = document.getElementById('btn-play');
     const btnText = document.getElementById('btn-text');
     const statusHint = document.getElementById('status-hint');
-    const statusDot = document.getElementById('status-dot');
-    const statusBadgeText = document.getElementById('status-badge-text');
     const searchResults = document.getElementById('search-results');
     const vinyl = document.getElementById('vinyl');
     const trackCover = document.getElementById('track-cover');
@@ -334,30 +397,81 @@
     const volumeIcon = document.getElementById('volume-icon');
     const visualizerBars = document.querySelectorAll('.bar-anim');
 
+    // โหมดสลับคลิป/แผ่นเสียง
+    const btnToggleMode = document.getElementById('btn-toggle-mode');
+    const modeIcon = document.getElementById('mode-icon');
+    const modeText = document.getElementById('mode-text');
+    const videoStage = document.getElementById('video-stage');
+    const vinylStage = document.getElementById('vinyl-stage');
+    const videoWrapper = document.getElementById('video-wrapper');
+    const hiddenPlayerBox = document.getElementById('hidden-player-box');
+
+    // 1. ระบบ Theme Color Switcher
+    document.querySelectorAll('.color-dot').forEach(dot => {
+      dot.addEventListener('click', () => {
+        const color = dot.dataset.color;
+        const gradient = dot.dataset.gradient;
+        const bg = dot.dataset.bg;
+
+        document.documentElement.style.setProperty('--accent-color', color);
+        document.documentElement.style.setProperty('--accent-glow', color + '73');
+        document.documentElement.style.setProperty('--accent-border', color + '55');
+        document.documentElement.style.setProperty('--accent-gradient', gradient);
+        document.body.style.background = bg;
+
+        document.querySelectorAll('.color-dot').forEach(d => d.style.borderColor = 'transparent');
+        dot.style.borderColor = '#ffffff';
+      });
+    });
+
+    // 2. ระบบสลับโหมดคลิปวิดีโอ (Video Mode) / แผ่นเสียง (Audio Mode)
+    btnToggleMode.addEventListener('click', () => {
+      isVideoMode = !isVideoMode;
+      const ytIframe = document.getElementById('yt-player');
+
+      if (isVideoMode) {
+        // ย้าย IFrame มาไว้ในกรอบวิดีโอ
+        videoStage.classList.remove('hidden');
+        vinylStage.classList.add('hidden');
+        videoWrapper.appendChild(ytIframe);
+        ytIframe.className = "video-mode-frame";
+
+        modeIcon.className = "fa-solid fa-compact-disc theme-accent-color";
+        modeText.innerText = "โหมดแผ่นเสียง (ปิดจอ)";
+        statusHint.innerText = "กำลังรับชมแบบวิดีโอคลิป";
+      } else {
+        // ย้าย IFrame กลับไปซ่อนในกล่องพื้นหลัง
+        videoStage.classList.add('hidden');
+        vinylStage.classList.remove('hidden');
+        hiddenPlayerBox.appendChild(ytIframe);
+        ytIframe.className = "audio-mode-frame";
+
+        modeIcon.className = "fa-solid fa-film theme-accent-color";
+        modeText.innerText = "โหมดดูคลิป";
+        statusHint.innerText = "โหมดเสียง: พับจอหรือปิดหน้าจอได้ทันที";
+      }
+    });
+
+    // 3. YouTube API Initial
     function initYouTube() {
       if (player) return;
       player = new YT.Player('yt-player', {
-        height: '200',
-        width: '200',
+        height: '100%',
+        width: '100%',
         playerVars: {
           'autoplay': 1,
-          'controls': 0,
+          'controls': 1,
           'playsinline': 1,
-          'disablekb': 1,
           'origin': window.location.origin
         },
         events: {
           'onReady': () => {
             isReady = true;
-            statusDot.className = "w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50";
-            statusBadgeText.innerText = "พร้อมใช้งาน";
             renderQueue();
             renderHistory();
           },
           'onStateChange': onStateChange,
           'onError': () => {
-            statusHint.innerText = "ไม่สามารถเล่นเพลงนี้ได้ ระบบจะข้ามไปเพลงถัดไป";
-            statusHint.className = "text-xs text-red-500 px-1 truncate";
             playNextInQueue();
           }
         }
@@ -401,8 +515,6 @@
       if (e.data === YT.PlayerState.PLAYING) {
         vinyl.classList.remove('spin-paused');
         toggleIcon.className = "fa-solid fa-pause";
-        statusHint.innerText = "กำลังเล่นเสียง • ปิดหน้าจอได้ทันที";
-        statusHint.className = "text-xs text-emerald-500 truncate flex items-center gap-1.5";
         visualizerBars.forEach(b => b.classList.remove('bar-paused'));
         silentAudio.play().catch(() => {});
         startTimer();
@@ -431,7 +543,7 @@
             currentVideoId = vData.video_id;
             currentTrack = {
               id: vData.video_id,
-              title: vData.title || "กำลังเล่นในมิกซ์",
+              title: vData.title || "กำลังเล่น",
               author: vData.author || "YouTube Artist",
               cover: `https://img.youtube.com/vi/${vData.video_id}/hqdefault.jpg`,
               timestamp: Date.now()
@@ -483,7 +595,7 @@
       }
     });
 
-    // ค้นหาผ่าน JSONP
+    // ค้นหาเพลงผ่าน JSONP
     window.handleSuggestions = function(data) {
       const suggestions = (data && data[1]) ? data[1] : [];
       if (suggestions.length === 0) {
@@ -495,7 +607,6 @@
 
     function searchTracks(query) {
       statusHint.innerText = `กำลังค้นหา "${query}"...`;
-      statusHint.className = "text-xs text-amber-500 truncate flex items-center gap-1.5";
       btnText.innerText = "ค้นหา...";
 
       const oldScript = document.getElementById('jsonp-search');
@@ -515,14 +626,14 @@
       items.forEach(itemData => {
         const text = Array.isArray(itemData) ? itemData[0] : itemData;
         const div = document.createElement('div');
-        div.className = "flex items-center justify-between p-2.5 rounded-xl hover:bg-zinc-900 cursor-pointer transition active:scale-[0.99] text-zinc-200 text-xs border border-transparent hover:border-zinc-800";
+        div.className = "flex items-center justify-between p-2.5 rounded-xl hover:bg-white/10 cursor-pointer transition active:scale-[0.99] text-zinc-200 text-xs border border-transparent hover:border-white/10";
         
         div.innerHTML = `
           <div class="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
-            <i class="fa-brands fa-youtube text-red-500 text-sm"></i>
+            <i class="fa-brands fa-youtube theme-accent-color text-sm"></i>
             <span class="truncate">${text}</span>
           </div>
-          <button class="btn-add-queue bg-zinc-800 hover:bg-red-600 text-zinc-300 hover:text-white text-[11px] px-2.5 py-1 rounded-lg transition flex items-center gap-1">
+          <button class="btn-add-queue bg-white/10 hover:bg-white/20 text-zinc-200 text-[11px] px-2.5 py-1 rounded-lg transition flex items-center gap-1">
             <i class="fa-solid fa-plus"></i> คิว
           </button>
         `;
@@ -554,7 +665,6 @@
     async function playSongBySearch(query) {
       if (!isReady || !player) return;
       statusHint.innerText = `กำลังดึงเพลง "${query}"...`;
-      statusHint.className = "text-xs text-amber-500 truncate flex items-center gap-1.5";
 
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
@@ -563,11 +673,9 @@
           playSong(data.videoId);
         } else {
           statusHint.innerText = "ไม่พบเพลงนี้ ลองคำอื่นดูครับ";
-          statusHint.className = "text-xs text-red-400 truncate flex items-center gap-1.5";
         }
       } catch (err) {
         statusHint.innerText = "การค้นหาขัดข้อง";
-        statusHint.className = "text-xs text-red-500 truncate flex items-center gap-1.5";
       }
     }
 
@@ -585,7 +693,6 @@
             cover: `https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`
           });
           statusHint.innerText = `เพิ่ม "${meta.title}" ในคิวแล้ว`;
-          statusHint.className = "text-xs text-emerald-500 truncate flex items-center gap-1.5";
         }
       } catch (e) {
         statusHint.innerText = "ไม่สามารถเพิ่มเข้าคิวได้";
@@ -608,8 +715,6 @@
     function playPlaylist(listId, videoId = null) {
       if (!isReady || !player) return;
       statusHint.innerText = "กำลังเริ่มเล่นมิกซ์เพลงแนะนำ...";
-      statusHint.className = "text-xs text-amber-500 truncate flex items-center gap-1.5";
-
       player.loadPlaylist({
         list: listId,
         listType: 'playlist',
@@ -621,7 +726,6 @@
       if (!isReady || !player) return;
       currentVideoId = videoId;
       statusHint.innerText = "กำลังโหลดเพลง...";
-      statusHint.className = "text-xs text-amber-500 truncate flex items-center gap-1.5";
 
       player.loadVideoById(videoId);
 
@@ -665,10 +769,10 @@
 
       if (songQueue.length === 0) {
         queueContainer.innerHTML = `
-          <div class="text-center py-12 text-zinc-600 text-xs">
-            <i class="fa-solid fa-list-ol text-2xl mb-2 text-zinc-700"></i>
-            <p class="font-medium text-zinc-400">ยังไม่มีเพลงในคิวถัดไป</p>
-            <p class="text-[11px] text-zinc-600 mt-1">กด "+ คิว" จากการค้นหา หรือเลือกจากแท็บประวัติ</p>
+          <div class="text-center py-12 text-zinc-500 text-xs">
+            <i class="fa-solid fa-list-ol text-2xl mb-2 text-zinc-600"></i>
+            <p class="font-medium text-zinc-300">ยังไม่มีเพลงในคิวถัดไป</p>
+            <p class="text-[11px] text-zinc-500 mt-1">กด "+ คิว" จากการค้นหา หรือเลือกจากประวัติ</p>
           </div>
         `;
         return;
@@ -676,15 +780,15 @@
 
       songQueue.forEach((item, index) => {
         const div = document.createElement('div');
-        div.className = "flex items-center gap-3 p-2.5 bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/60 rounded-xl cursor-pointer transition text-xs group";
+        div.className = "flex items-center gap-3 p-2.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl cursor-pointer transition text-xs group";
         div.innerHTML = `
-          <span class="text-xs font-mono text-zinc-500 w-5 text-center">${index + 1}</span>
-          <img src="${item.cover}" class="w-11 h-11 rounded-lg object-cover flex-shrink-0 bg-zinc-800" />
+          <span class="text-xs font-mono text-zinc-400 w-5 text-center">${index + 1}</span>
+          <img src="${item.cover}" class="w-11 h-11 rounded-xl object-cover flex-shrink-0 bg-zinc-800" />
           <div class="flex-1 min-w-0 pr-1">
-            <p class="text-xs font-medium truncate text-zinc-200 group-hover:text-red-400 transition">${item.title}</p>
-            <p class="text-[11px] text-zinc-500 truncate mt-0.5">${item.author}</p>
+            <p class="text-xs font-medium truncate text-zinc-100 group-hover:text-white transition">${item.title}</p>
+            <p class="text-[11px] text-zinc-400 truncate mt-0.5">${item.author}</p>
           </div>
-          <button class="btn-del-queue text-zinc-600 hover:text-red-500 p-2 text-sm transition">
+          <button class="btn-del-queue text-zinc-500 hover:text-red-400 p-2 text-sm transition">
             <i class="fa-solid fa-xmark"></i>
           </button>
         `;
@@ -705,7 +809,7 @@
       });
     }
 
-    // จัดการประวัติการฟัง และ เพิ่มปุ่ม "+ คิว"
+    // ประวัติการฟัง
     function getHistory() {
       return JSON.parse(localStorage.getItem('plamtube_history') || '[]');
     }
@@ -733,9 +837,9 @@
 
       if (list.length === 0) {
         historyContainer.innerHTML = `
-          <div class="text-center py-12 text-zinc-600 text-xs">
-            <i class="fa-solid fa-compact-disc text-2xl mb-2 text-zinc-700"></i>
-            <p class="font-medium text-zinc-400">ยังไม่มีประวัติการฟังเพลง</p>
+          <div class="text-center py-12 text-zinc-500 text-xs">
+            <i class="fa-solid fa-compact-disc text-2xl mb-2 text-zinc-600"></i>
+            <p class="font-medium text-zinc-300">ยังไม่มีประวัติการฟังเพลง</p>
           </div>
         `;
         return;
@@ -744,30 +848,28 @@
       list.forEach(item => {
         const timeAgo = formatTimeAgo(item.timestamp);
         const div = document.createElement('div');
-        div.className = "flex items-center gap-3 p-2 bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/60 hover:border-red-900/40 rounded-xl cursor-pointer transition text-xs group";
+        div.className = "flex items-center gap-3 p-2.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl cursor-pointer transition text-xs group";
 
         div.innerHTML = `
-          <img src="${item.cover}" class="w-11 h-11 rounded-lg object-cover flex-shrink-0 bg-zinc-800" />
+          <img src="${item.cover}" class="w-11 h-11 rounded-xl object-cover flex-shrink-0 bg-zinc-800" />
           <div class="flex-1 min-w-0 pr-1">
-            <p class="text-xs font-semibold truncate text-zinc-200 group-hover:text-red-400 transition">${item.title}</p>
-            <div class="flex items-center gap-2 mt-0.5 text-[10px] text-zinc-500">
+            <p class="text-xs font-semibold truncate text-zinc-200 group-hover:text-white transition">${item.title}</p>
+            <div class="flex items-center gap-2 mt-0.5 text-[10px] text-zinc-400">
               <span class="truncate max-w-[110px]">${item.author}</span>
               <span>&bull;</span>
               <span>${timeAgo}</span>
             </div>
           </div>
-          <button class="btn-hist-queue bg-zinc-800 hover:bg-red-600 text-zinc-300 hover:text-white text-[10px] px-2 py-1 rounded transition flex items-center gap-1" title="เพิ่มเข้าคิวเล่น">
+          <button class="btn-hist-queue bg-white/10 hover:bg-white/20 text-zinc-200 text-[10px] px-2 py-1 rounded-lg transition flex items-center gap-1" title="เพิ่มเข้าคิวเล่น">
             <i class="fa-solid fa-plus"></i> คิว
           </button>
-          <button class="btn-del text-zinc-600 hover:text-red-500 p-2 text-xs transition" title="ลบออกจากประวัติ">
+          <button class="btn-del text-zinc-500 hover:text-red-400 p-2 text-xs transition" title="ลบออกจากประวัติ">
             <i class="fa-solid fa-trash-can"></i>
           </button>
         `;
 
-        // กดเล่นเพลงทันที
         div.addEventListener('click', () => playSong(item.id));
 
-        // กดเพิ่มเพลงเก่าเข้าคิว
         div.querySelector('.btn-hist-queue').addEventListener('click', (e) => {
           e.stopPropagation();
           enqueueTrack({
@@ -777,10 +879,8 @@
             cover: item.cover
           });
           statusHint.innerText = `เพิ่ม "${item.title}" เข้าคิวแล้ว`;
-          statusHint.className = "text-xs text-emerald-500 truncate flex items-center gap-1.5";
         });
 
-        // กดลบเพลงออกจากประวัติ
         div.querySelector('.btn-del').addEventListener('click', (e) => deleteHistory(item.id, e));
 
         historyContainer.appendChild(div);
@@ -796,10 +896,10 @@
       return `${Math.floor(diff / 86400)} วันที่แล้ว`;
     }
 
-    // สลับแท็บ Queue กับ History
+    // สลับแท็บ
     tabQueueBtn.addEventListener('click', () => {
       currentTab = 'queue';
-      tabQueueBtn.className = "text-xs font-bold uppercase tracking-wider text-red-500 border-b-2 border-red-500 pb-1.5 flex items-center gap-1.5 transition";
+      tabQueueBtn.className = "text-xs font-bold uppercase tracking-wider text-white border-b-2 theme-accent-border pb-1.5 flex items-center gap-1.5 transition";
       tabHistoryBtn.className = "text-xs font-bold uppercase tracking-wider text-zinc-500 pb-1.5 flex items-center gap-1.5 transition";
       queueContainer.classList.remove('hidden');
       historyContainer.classList.add('hidden');
@@ -807,7 +907,7 @@
 
     tabHistoryBtn.addEventListener('click', () => {
       currentTab = 'history';
-      tabHistoryBtn.className = "text-xs font-bold uppercase tracking-wider text-red-500 border-b-2 border-red-500 pb-1.5 flex items-center gap-1.5 transition";
+      tabHistoryBtn.className = "text-xs font-bold uppercase tracking-wider text-white border-b-2 theme-accent-border pb-1.5 flex items-center gap-1.5 transition";
       tabQueueBtn.className = "text-xs font-bold uppercase tracking-wider text-zinc-500 pb-1.5 flex items-center gap-1.5 transition";
       historyContainer.classList.remove('hidden');
       queueContainer.classList.add('hidden');
@@ -846,8 +946,7 @@
           silentAudio.pause();
           timerCountdown.innerText = "หยุดแล้ว";
           timerSelect.value = "0";
-          statusHint.innerText = "ตัวจับเวลาทำงาน: หยุดเล่นเพลงแล้ว";
-          statusHint.className = "text-xs text-amber-500 truncate flex items-center gap-1.5";
+          statusHint.innerText = "ตัวจับเวลาทำงาน: หยุดเล่นแล้ว";
         }
       }, 1000);
     });
@@ -858,7 +957,7 @@
       timerCountdown.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
     }
 
-    // มิกซ์วิทยุ
+    // ปุ่มมิกซ์วิทยุ
     btnMixMode.addEventListener('click', () => {
       if (!currentVideoId) {
         alert("กรุณาเลือกเล่นเพลงก่อนเพื่อเปิดมิกซ์");
@@ -942,7 +1041,7 @@
         navigator.mediaSession.metadata = new MediaMetadata({
           title: currentTrack.title,
           artist: currentTrack.author,
-          album: 'plamtube Ultra',
+          album: 'plamtube Premium',
           artwork: [{ src: currentTrack.cover, sizes: '512x512', type: 'image/jpeg' }]
         });
         navigator.mediaSession.setActionHandler('play', () => player.playVideo());
